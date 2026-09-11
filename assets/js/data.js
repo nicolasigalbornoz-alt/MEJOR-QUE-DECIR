@@ -84,6 +84,12 @@
   // de un Google Form, acá el esquema lo definimos nosotros mismos, así
   // que no hace falta adivinar columnas por el texto de la pregunta.
   function parseAppsScriptRows(json) {
+    // Posiciones fijas — tienen que coincidir con RESPUESTA_HEADERS y
+    // appendResponse() en apps-script/Code.gs:
+    // 0 Marca temporal, 1 Nombre, 2 Provincia, 3 Localidad, 4 Espacio
+    // político, 5 Participación, 6 Situación (1-5), 7 Situación/problemática
+    // (texto), 8 Problemas, 9 Necesidades, 10 Comisión de interés,
+    // 11 Visión país (-2 a 2), 12 Visión (frase), 13 Edad.
     const rows = Array.isArray(json && json.rows) ? json.rows : [];
     const out = [];
     for (const r of rows) {
@@ -92,20 +98,22 @@
       const provinceId = window.MQD_matchProvince(provinciaRaw);
       if (!provinceId) continue;
 
-      const situ = Number(r[4]);
-      const vision = Number(r[8]);
+      const situ = Number(r[6]);
+      const vision = Number(r[11]);
       out.push({
         provinceId,
         provinciaRaw,
         localidad: (r[3] || "").toString().trim(),
-        situacionEscala: Number.isFinite(situ) && r[4] !== "" ? situ : null,
-        situacionTexto: (r[5] || "").toString().trim(),
-        problemas: splitMulti((r[6] || "").toString(), ";"),
-        necesidades: splitMulti((r[7] || "").toString(), ";"),
-        visionEscala: Number.isFinite(vision) && r[8] !== "" ? vision : null,
-        visionFrase: (r[9] || "").toString().trim(),
-        edad: (r[10] || "").toString().trim(),
-        participa: (r[11] || "").toString().trim(),
+        espacioPolitico: (r[4] || "").toString().trim(),
+        participa: (r[5] || "").toString().trim(),
+        situacionEscala: Number.isFinite(situ) && r[6] !== "" ? situ : null,
+        situacionTexto: (r[7] || "").toString().trim(),
+        problemas: splitMulti((r[8] || "").toString(), ";"),
+        necesidades: splitMulti((r[9] || "").toString(), ";"),
+        comisiones: splitMulti((r[10] || "").toString(), ";"),
+        visionEscala: Number.isFinite(vision) && r[11] !== "" ? vision : null,
+        visionFrase: (r[12] || "").toString().trim(),
+        edad: (r[13] || "").toString().trim(),
         nombre: (r[1] || "").toString().trim(),
       });
     }

@@ -1,6 +1,6 @@
 /**
- * Motor compartido de formularios propios del sitio (encuesta.js y
- * relevamiento.js). Genera los mismos componentes visuales — tarjetas de
+ * Motor compartido de formularios propios del sitio (usado por
+ * encuesta.js). Genera los mismos componentes visuales — tarjetas de
  * opción para radios/checkboxes, campos de texto, escala lineal — para
  * que todos los formularios del sitio se vean y se comporten igual.
  */

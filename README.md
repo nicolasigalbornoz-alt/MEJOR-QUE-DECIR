@@ -21,8 +21,7 @@ y convierte esas respuestas en un **mapa federal** interactivo y un
 | `encuesta.html` | Encuesta — formulario propio (no es un Google Form embebido). |
 | `mapa.html` | Mapa federal interactivo (Leaflet): provincias reales, tocable/pellizcable. |
 | `sintesis.html` | Documento de síntesis auto-generado, con botón de descarga/impresión. |
-| `relevamiento.html` | Relevamiento Territorial y Formativo — formulario propio de registro. |
-| `insumos.html` | Materiales para la militancia (carpeta de Drive + Centros de Estudios). |
+| `insumos.html` | Materiales para la militancia (carpetas de Drive explorables + Centros de Estudios). |
 
 ## Cómo funciona (sin backend propio)
 
@@ -76,8 +75,7 @@ assets/
     data.js               Carga y procesa las respuestas (Apps Script, CSV o demo)
     nav.js                Header/footer compartidos + menú móvil
     formkit.js            Motor compartido de formularios (tarjetas de opción, escala lineal, etc.)
-    encuesta.js           Formulario "Mejor que decir" + autocompletado por nombre
-    relevamiento.js       Formulario "Relevamiento Territorial y Formativo"
+    encuesta.js           Encuesta (un solo formulario: distrito, problemas/necesidades, comisión de interés, visión país) + autocompletado por nombre
     map.js                Mapa interactivo (Leaflet + GeoJSON + CABA como punto)
     sintesis.js            Lógica del documento de síntesis
     vendor/
@@ -111,8 +109,11 @@ interacción — no para traer imágenes de fondo.
 
 ### La encuesta y el autocompletado
 
-`encuesta.html` es un formulario propio (mismo diseño que el resto del
-sitio), no un Google Form embebido. Al escribir el nombre, busca
+`encuesta.html` es un solo formulario propio (mismo diseño que el resto del
+sitio), no un Google Form embebido — junta en un único recorrido lo que en
+un momento fueron dos encuestas separadas ("Mejor que decir" y el
+Relevamiento Territorial y Formativo), que terminaban preguntando
+prácticamente lo mismo sobre el distrito. Al escribir el nombre, busca
 coincidencias contra la hoja de inscriptos del encuentro y, si encuentra
 una, autocompleta provincia y ciudad — **nunca** expone teléfono, mail,
 fecha de nacimiento ni usuario de Instagram de nadie: esa búsqueda la
