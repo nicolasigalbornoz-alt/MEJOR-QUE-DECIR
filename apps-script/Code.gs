@@ -2,10 +2,10 @@
  * MEJOR QUE DECIR — backend en Google Apps Script.
  *
  * Qué hace:
- *  1) Recibe las respuestas de los formularios del sitio (encuesta.html y
- *     relevamiento.html) y las guarda cada una en su propia hoja nueva de
- *     esta misma planilla. NUNCA toca ni reescribe el padrón de
- *     inscriptos: esa hoja solo se LEE, para el autocompletado.
+ *  1) Recibe las respuestas del formulario único del sitio (encuesta.html)
+ *     y las guarda en una hoja nueva de esta misma planilla ("Respuestas
+ *     encuesta"). NUNCA toca ni reescribe el padrón de inscriptos: esa
+ *     hoja solo se LEE, para el autocompletado.
  *  2) Busca coincidencias de nombre en el padrón de inscriptos (la hoja
  *     "Respuestas de formulario 1") para autocompletar provincia/ciudad
  *     — SOLO devuelve nombre, provincia y ciudad, nunca teléfono, mail,
@@ -17,8 +17,7 @@
  */
 
 const PADRON_SHEET_NAME = "Hoja 1"; // hoja con los inscriptos al encuentro (solo lectura)
-const RESPUESTAS_SHEET_NAME = "Respuestas encuesta";     // hoja de "Mejor que decir" (se crea sola si no existe)
-const RELEVAMIENTO_SHEET_NAME = "Relevamiento territorial"; // hoja del Relevamiento Territorial (se crea sola)
+const RESPUESTAS_SHEET_NAME = "Respuestas encuesta"; // hoja única de respuestas (se crea sola si no existe)
 
 // Nombres de columna EXACTOS de la hoja de inscriptos (ajustar si difieren).
 const PADRON_COLS = {
@@ -27,31 +26,24 @@ const PADRON_COLS = {
   ciudad: "¿De qué ciudad sos?",
 };
 
+// El orden acá tiene que coincidir exactamente con el array que arma
+// appendResponse() más abajo (misma posición = misma columna), y con
+// las posiciones que lee assets/js/data.js (parseAppsScriptRows).
 const RESPUESTA_HEADERS = [
   "Marca temporal",
   "Nombre",
   "Provincia",
   "Localidad",
+  "Espacio político",
+  "Participación en espacios de militancia",
   "Situación distrito (1-5)",
-  "Situación (texto)",
+  "Situación / problemática (texto)",
   "Problemas juventud",
   "Necesidades",
+  "Comisión de interés",
   "Visión país (-2 a 2)",
   "Visión (frase)",
   "Edad",
-  "Participación",
-];
-
-const RELEVAMIENTO_HEADERS = [
-  "Marca temporal",
-  "Nombre completo",
-  "Provincia",
-  "Localidad",
-  "Espacio político",
-  "Comisión de interés",
-  "Problemática de la localidad",
-  "Situación del distrito (1-5)",
-  "Situación (detalle)",
 ];
 
 function doGet(e) {
@@ -91,11 +83,7 @@ function handleDebug() {
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
-    if (data.formulario === "relevamiento") {
-      appendRelevamiento(data);
-    } else {
-      appendResponse(data);
-    }
+    appendResponse(data);
     return jsonOut({ ok: true });
   } catch (err) {
     return jsonOut({ ok: false, error: String(err && err.message ? err.message : err) });
@@ -177,29 +165,16 @@ function appendResponse(data) {
     (data.nombre || "").toString().trim(),
     (data.provincia || "").toString().trim(),
     (data.localidad || "").toString().trim(),
+    (data.espacioPolitico || "").toString().trim(),
+    (data.participa || "").toString().trim(),
     data.situacionEscala || "",
     (data.situacionTexto || "").toString().trim(),
     Array.isArray(data.problemas) ? data.problemas.join("; ") : "",
     Array.isArray(data.necesidades) ? data.necesidades.join("; ") : "",
+    Array.isArray(data.comisiones) ? data.comisiones.join("; ") : "",
     data.visionEscala != null ? data.visionEscala : "",
     (data.visionFrase || "").toString().trim(),
     (data.edad || "").toString().trim(),
-    (data.participa || "").toString().trim(),
-  ]);
-}
-
-function appendRelevamiento(data) {
-  const sheet = getOrCreateSheet(RELEVAMIENTO_SHEET_NAME, RELEVAMIENTO_HEADERS);
-  sheet.appendRow([
-    new Date(),
-    (data.nombreCompleto || "").toString().trim(),
-    (data.provincia || "").toString().trim(),
-    (data.localidad || "").toString().trim(),
-    (data.espacioPolitico || "").toString().trim(),
-    Array.isArray(data.comisiones) ? data.comisiones.join("; ") : "",
-    (data.problematica || "").toString().trim(),
-    data.situacionEscala || "",
-    (data.situacionDetalle || "").toString().trim(),
   ]);
 }
 

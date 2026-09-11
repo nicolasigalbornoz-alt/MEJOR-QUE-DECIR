@@ -5,6 +5,10 @@
  * buscador de nombre que autocompleta provincia/ciudad contra el padrón
  * de inscriptos (solo esos dos datos: nunca teléfono, mail, fecha de
  * nacimiento ni Instagram — ver apps-script/Code.gs).
+ *
+ * Un solo formulario para todo: junta lo que antes eran dos encuestas
+ * separadas ("Mejor que decir" y "Relevamiento Territorial y Formativo"),
+ * que terminaban preguntando prácticamente lo mismo sobre el distrito.
  */
 (function () {
   const K = window.MQD_FORMKIT;
@@ -34,6 +38,17 @@
     "Conectividad y acceso a tecnología",
     "Programas de prevención de adicciones",
   ];
+  const COMISIONES = [
+    "Organización y Política Territorial",
+    "Obras Públicas, Hábitat y Transporte",
+    "Ambiente y Desarrollo Sustentable",
+    "Economía, Hacienda y Producción",
+    "Salud y Acción Social",
+    "Educación, Ciencia y Cultura",
+    "Juventud",
+    "Seguridad y Derechos Humanos",
+    "Otra...",
+  ];
   const SITUACION = [
     { value: 1, label: "Muy mala" },
     { value: 2, label: "Mala" },
@@ -53,12 +68,13 @@
   const MAX_MULTI = 3;
 
   const state = {
-    formulario: "encuesta",
     nombre: "", provincia: "", localidad: "",
+    espacioPolitico: "", participa: "",
     situacionEscala: null, situacionTexto: "",
     problemas: [], necesidades: [],
+    comisiones: [], comisionOtra: "",
     visionEscala: null, visionFrase: "",
-    edad: "", participa: "",
+    edad: "",
   };
 
   // ---------- Autocompletar por nombre ----------
@@ -160,46 +176,67 @@
     s2.appendChild(fieldWrap("Localidad / ciudad / barrio", localidadInput, { key: "localidad" }));
     form.appendChild(s2);
 
-    // 3) Situación del distrito
-    const situacionTexto = el("textarea", { class: "textarea", id: "fSituacionTexto", placeholder: "Contanos en pocas palabras (opcional)" });
-    situacionTexto.addEventListener("input", () => { state.situacionTexto = situacionTexto.value.trim(); });
+    // 3) Tu espacio
+    const espacioInput = el("input", { class: "input", type: "text", id: "fEspacio", placeholder: "Espacio, agrupación o referencia política" });
+    espacioInput.addEventListener("input", () => { state.espacioPolitico = espacioInput.value.trim(); });
     const s3 = el("div", { class: "card" });
-    s3.appendChild(stepHeader(3, "La situación de tu distrito"));
-    s3.appendChild(fieldWrap("¿Cómo calificarías la situación general hoy?", radioGroup("situacion", SITUACION, (v) => { state.situacionEscala = v; }), { key: "situacionEscala" }));
-    s3.appendChild(fieldWrap("Contanos brevemente (opcional)", situacionTexto));
+    s3.appendChild(stepHeader(3, "Tu espacio"));
+    s3.appendChild(fieldWrap("Espacio político", espacioInput, { key: "espacioPolitico" }));
+    s3.appendChild(fieldWrap("¿Participás en algún espacio de militancia?", radioGroup("participa", PARTICIPA, (v) => { state.participa = v; }), { key: "participa" }));
     form.appendChild(s3);
 
-    // 4) Problemas
+    // 4) Situación del distrito
+    const situacionTexto = el("textarea", { class: "textarea", id: "fSituacionTexto", placeholder: "Contanos la situación y el principal problema de tu distrito" });
+    situacionTexto.addEventListener("input", () => { state.situacionTexto = situacionTexto.value.trim(); });
     const s4 = el("div", { class: "card" });
-    s4.appendChild(stepHeader(4, "Problemas de la juventud", `Elegí hasta ${MAX_MULTI} en tu lugar.`));
-    const counter4 = el("div", { class: "field-counter" });
-    s4.appendChild(fieldWrap(null, checkboxGroup("problemas", PROBLEMAS, state.problemas, { max: MAX_MULTI, counterEl: counter4 }), { key: "problemas", error: "Elegí al menos una opción." }));
-    s4.querySelector(".field").appendChild(counter4);
+    s4.appendChild(stepHeader(4, "La situación de tu distrito"));
+    s4.appendChild(fieldWrap("¿Cómo calificarías la situación general hoy?", radioGroup("situacion", SITUACION, (v) => { state.situacionEscala = v; }), { key: "situacionEscala" }));
+    s4.appendChild(fieldWrap("Contanos más", situacionTexto, { key: "situacionTexto" }));
     form.appendChild(s4);
 
-    // 5) Necesidades
+    // 5) Problemas
     const s5 = el("div", { class: "card" });
-    s5.appendChild(stepHeader(5, "¿Qué necesitan los y las jóvenes?", `Elegí hasta ${MAX_MULTI}.`));
+    s5.appendChild(stepHeader(5, "Problemas de la juventud", `Elegí hasta ${MAX_MULTI} en tu lugar.`));
     const counter5 = el("div", { class: "field-counter" });
-    s5.appendChild(fieldWrap(null, checkboxGroup("necesidades", NECESIDADES, state.necesidades, { max: MAX_MULTI, counterEl: counter5 }), { key: "necesidades", error: "Elegí al menos una opción." }));
+    s5.appendChild(fieldWrap(null, checkboxGroup("problemas", PROBLEMAS, state.problemas, { max: MAX_MULTI, counterEl: counter5 }), { key: "problemas", error: "Elegí al menos una opción." }));
     s5.querySelector(".field").appendChild(counter5);
     form.appendChild(s5);
 
-    // 6) Visión país
-    const visionFrase = el("input", { class: "input", type: "text", id: "fVisionFrase", placeholder: "En una frase (opcional)" });
-    visionFrase.addEventListener("input", () => { state.visionFrase = visionFrase.value.trim(); });
+    // 6) Necesidades
     const s6 = el("div", { class: "card" });
-    s6.appendChild(stepHeader(6, "Visión del país"));
-    s6.appendChild(fieldWrap("¿Qué tan optimista sos sobre el futuro del país?", radioGroup("vision", VISION, (v) => { state.visionEscala = v; }), { key: "visionEscala" }));
-    s6.appendChild(fieldWrap("¿Qué país te gustaría construir? (opcional)", visionFrase));
+    s6.appendChild(stepHeader(6, "¿Qué necesitan los y las jóvenes?", `Elegí hasta ${MAX_MULTI}.`));
+    const counter6 = el("div", { class: "field-counter" });
+    s6.appendChild(fieldWrap(null, checkboxGroup("necesidades", NECESIDADES, state.necesidades, { max: MAX_MULTI, counterEl: counter6 }), { key: "necesidades", error: "Elegí al menos una opción." }));
+    s6.querySelector(".field").appendChild(counter6);
     form.appendChild(s6);
 
-    // 7) Sobre vos
+    // 7) Comisión de interés
+    const otraInput = el("input", { class: "input", type: "text", placeholder: "Contanos cuál", style: "margin-top:8px; display:none;" });
+    otraInput.addEventListener("input", () => { state.comisionOtra = otraInput.value.trim(); });
     const s7 = el("div", { class: "card" });
-    s7.appendChild(stepHeader(7, "Un poco más sobre vos"));
-    s7.appendChild(fieldWrap("Edad", radioGroup("edad", EDAD, (v) => { state.edad = v; }), { key: "edad" }));
-    s7.appendChild(fieldWrap("¿Participás en algún espacio de militancia?", radioGroup("participa", PARTICIPA, (v) => { state.participa = v; }), { key: "participa" }));
+    s7.appendChild(stepHeader(7, "Comisión de interés", "Elegí una o más."));
+    const comisionesGroup = checkboxGroup("comisiones", COMISIONES, state.comisiones, {
+      onOther: (checked) => { otraInput.style.display = checked ? "block" : "none"; if (!checked) { otraInput.value = ""; state.comisionOtra = ""; } },
+    });
+    const f7 = fieldWrap(null, comisionesGroup, { key: "comisiones", error: "Elegí al menos una comisión." });
+    f7.appendChild(otraInput);
+    s7.appendChild(f7);
     form.appendChild(s7);
+
+    // 8) Visión país
+    const visionFrase = el("input", { class: "input", type: "text", id: "fVisionFrase", placeholder: "En una frase (opcional)" });
+    visionFrase.addEventListener("input", () => { state.visionFrase = visionFrase.value.trim(); });
+    const s8 = el("div", { class: "card" });
+    s8.appendChild(stepHeader(8, "Visión del país"));
+    s8.appendChild(fieldWrap("¿Qué tan optimista sos sobre el futuro del país?", radioGroup("vision", VISION, (v) => { state.visionEscala = v; }), { key: "visionEscala" }));
+    s8.appendChild(fieldWrap("¿Qué país te gustaría construir? (opcional)", visionFrase));
+    form.appendChild(s8);
+
+    // 9) Sobre vos
+    const s9 = el("div", { class: "card" });
+    s9.appendChild(stepHeader(9, "Un poco más sobre vos"));
+    s9.appendChild(fieldWrap("Edad", radioGroup("edad", EDAD, (v) => { state.edad = v; }), { key: "edad" }));
+    form.appendChild(s9);
 
     // Enviar
     const submitBtn = el("button", { class: "btn btn-primary btn-block", type: "submit" }, [text("Enviar respuesta")]);
@@ -208,15 +245,15 @@
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
-      handleSubmit(form, submitBtn, msg, counter4, counter5);
+      handleSubmit(form, submitBtn, msg, counter5, counter6, otraInput);
     });
 
     return form;
   }
 
-  async function handleSubmit(form, submitBtn, msg, counter4, counter5) {
+  async function handleSubmit(form, submitBtn, msg, counter5, counter6, otraInput) {
     msg.classList.remove("is-visible", "success", "error");
-    const required = ["provincia", "localidad", "situacionEscala", "problemas", "necesidades", "visionEscala", "edad", "participa"];
+    const required = ["provincia", "localidad", "espacioPolitico", "participa", "situacionEscala", "situacionTexto", "problemas", "necesidades", "comisiones", "visionEscala", "edad"];
     let firstInvalid = validateRequired(form, state, required);
     if (!state.nombre) {
       const fieldEl = form.querySelector('[data-field="nombre"]');
@@ -235,20 +272,25 @@
       return;
     }
 
+    const payload = { ...state, comisiones: state.comisiones.map((c) => (/^otra/i.test(c) && state.comisionOtra ? `Otra: ${state.comisionOtra}` : c)) };
+
     submitBtn.disabled = true;
     submitBtn.textContent = "Enviando…";
     try {
-      await submitToAppsScript(state);
+      await submitToAppsScript(payload);
 
       form.reset();
       form.querySelectorAll(".option-card.is-checked").forEach((c) => c.classList.remove("is-checked"));
+      otraInput.style.display = "none";
       state.nombre = ""; state.provincia = ""; state.localidad = "";
+      state.espacioPolitico = ""; state.participa = "";
       state.situacionEscala = null; state.situacionTexto = "";
       state.problemas.length = 0; state.necesidades.length = 0;
+      state.comisiones.length = 0; state.comisionOtra = "";
       state.visionEscala = null; state.visionFrase = "";
-      state.edad = ""; state.participa = "";
-      counter4.textContent = `0/${MAX_MULTI} elegidos`;
+      state.edad = "";
       counter5.textContent = `0/${MAX_MULTI} elegidos`;
+      counter6.textContent = `0/${MAX_MULTI} elegidos`;
       msg.textContent = "¡Gracias! Tu respuesta ya se sumó al mapa y a la síntesis.";
       msg.classList.add("is-visible", "success");
       msg.scrollIntoView({ behavior: "smooth", block: "center" });

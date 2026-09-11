@@ -1,17 +1,15 @@
 # Cómo conectar el backend (Google Apps Script + tu planilla)
 
-Los formularios del sitio (`encuesta.html` y `relevamiento.html`) ya **no**
-usan un Google Form embebido: son formularios propios (con el diseño del
-sitio) que escriben directo en tu Google Sheets, y que además reconocen el
-nombre de cada inscripto contra el padrón del encuentro para autocompletar
-provincia y ciudad. Todo esto corre con **Google Apps Script**, gratis, sin
-servidor propio — y **nunca** modifica la hoja del padrón: esa hoja solo se
-lee, para el autocompletado.
+El formulario del sitio (`encuesta.html`) ya **no** usa un Google Form
+embebido: es un formulario propio (con el diseño del sitio) que escribe
+directo en tu Google Sheets, y que además reconoce el nombre de cada
+inscripto contra el padrón del encuentro para autocompletar provincia y
+ciudad. Todo esto corre con **Google Apps Script**, gratis, sin servidor
+propio — y **nunca** modifica la hoja del padrón: esa hoja solo se lee,
+para el autocompletado.
 
-Cada formulario guarda sus respuestas en su propia hoja, que se crea sola
-la primera vez que alguien responde: "Respuestas encuesta" para "Mejor que
-decir" y "Relevamiento territorial" para el Relevamiento Territorial y
-Formativo.
+Las respuestas se guardan en una única hoja, "Respuestas encuesta", que se
+crea sola la primera vez que alguien responde.
 
 Este instructivo lleva ~10 minutos y lo hace cualquier persona con acceso
 de edición a la planilla de trabajo (la que tiene el padrón de inscriptos).
