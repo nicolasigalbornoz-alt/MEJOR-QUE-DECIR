@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Mapa federal — MEJOR QUE DECIR</title>
+  <meta name="description" content="Mapa federal con lo que respondieron los y las jóvenes de cada provincia: problemas, necesidades, situación del distrito y visión del país." />
+  <link rel="icon" href="favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/img/icon-192.png" />
+  <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png" />
+  <meta name="theme-color" content="#04537a" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body data-page="mapa">
+  <header class="site-header" id="site-header"></header>
+
+  <main>
+    <section class="hero wrap" style="padding-top:28px;">
+      <span class="eyebrow">Mapa federal</span>
+      <h1 style="font-size:clamp(24px,7vw,30px)">Lo que dijo cada distrito</h1>
+      <p>Tocá una provincia para ver sus problemas, necesidades y visión del país. El color indica cuántos respondieron desde ahí.</p>
+    </section>
+
+    <section class="section-tight wrap">
+      <div class="data-banner skeleton" id="dataBanner">&nbsp;</div>
+
+      <div class="stat-row">
+        <div class="stat"><b id="statTotal">—</b><span>Respuestas</span></div>
+        <div class="stat"><b id="statProv">—</b><span>Provincias</span></div>
+        <div class="stat"><b id="statLoc">—</b><span>Localidades</span></div>
+      </div>
+
+      <div class="map-legend" id="mapLegend"></div>
+
+      <div class="tile-grid" id="tileGrid"></div>
+      <p class="muted center small">Mapa esquemático (cartograma), pensado para que cada distrito sea tocable en el celular — no es un mapa geográfico exacto.</p>
+    </section>
+
+    <section class="section-tight wrap">
+      <div class="card center">
+        <h2 class="mt-0" style="font-size:20px;">¿Falta tu distrito?</h2>
+        <p>Sumá tu respuesta y aparecé en el mapa.</p>
+        <a class="btn btn-primary" href="encuesta.html">Responder la encuesta</a>
+      </div>
+    </section>
+  </main>
+
+  <div class="sheet-backdrop" id="sheetBackdrop"></div>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Detalle del distrito">
+    <div class="sheet__handle"></div>
+    <button class="sheet__close" id="sheetClose" aria-label="Cerrar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+    <div id="sheetBody"></div>
+  </div>
+
+  <footer class="site-footer" id="site-footer"></footer>
+
+  <script src="assets/js/vendor/papaparse.min.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/provinces.js"></script>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/nav.js"></script>
+  <script src="assets/js/map.js"></script>
+</body>
+</html>

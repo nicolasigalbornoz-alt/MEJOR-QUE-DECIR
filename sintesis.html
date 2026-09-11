@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Síntesis — MEJOR QUE DECIR</title>
+  <meta name="description" content="Documento de síntesis generado automáticamente con las respuestas del Encuentro Nacional de Jóvenes FR: problemas, necesidades, situación de los distritos y visión del país." />
+  <link rel="icon" href="favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/img/icon-192.png" />
+  <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png" />
+  <meta name="theme-color" content="#04537a" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body data-page="sintesis">
+  <header class="site-header no-print" id="site-header"></header>
+
+  <main>
+    <section class="hero wrap" style="padding-top:28px;">
+      <span class="eyebrow">Documento de síntesis</span>
+      <h1 style="font-size:clamp(24px,7vw,30px)">Lo que dijeron los pibes</h1>
+      <p>Informe generado automáticamente con las respuestas de la encuesta. Se actualiza solo, sin carga manual.</p>
+      <button class="btn btn-ghost no-print" id="printBtn" style="margin-top:6px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Descargar / imprimir
+      </button>
+    </section>
+
+    <section class="section-tight wrap">
+      <div class="data-banner skeleton no-print" id="dataBanner">&nbsp;</div>
+
+      <div class="stat-row">
+        <div class="stat"><b id="statTotal">—</b><span>Respuestas</span></div>
+        <div class="stat"><b id="statProv">—</b><span>Provincias</span></div>
+        <div class="stat"><b id="statLoc">—</b><span>Localidades</span></div>
+      </div>
+    </section>
+
+    <section class="section-tight wrap" id="narrative-section">
+      <h2>Resumen ejecutivo</h2>
+      <div id="narrative"><p class="skeleton" style="height:80px;"></p></div>
+    </section>
+
+    <hr class="sep" />
+
+    <section class="section-tight wrap">
+      <h2>Problemas de la juventud, a nivel nacional</h2>
+      <p class="muted">Cantidad de menciones entre todos los distritos.</p>
+      <div id="problemasList"><p class="skeleton" style="height:120px;"></p></div>
+    </section>
+
+    <section class="section-tight wrap">
+      <h2>Qué necesitan los y las jóvenes</h2>
+      <p class="muted">Cantidad de menciones entre todos los distritos.</p>
+      <div id="necesidadesList"><p class="skeleton" style="height:120px;"></p></div>
+    </section>
+
+    <hr class="sep" />
+
+    <section class="section-tight wrap">
+      <h2>Visión del país</h2>
+      <p class="muted">Distribución de respuestas sobre qué tan optimistas son respecto al futuro.</p>
+      <div class="diverging" id="visionDiverging"></div>
+    </section>
+
+    <section class="section-tight wrap">
+      <h2>Participación por región</h2>
+      <ul class="bar-list" id="regionsList"></ul>
+    </section>
+
+    <section class="section-tight wrap">
+      <h2>Quiénes respondieron</h2>
+      <p class="muted small mt-0">Edad</p>
+      <div id="edadList"></div>
+      <p class="muted small" style="margin-top:16px;">¿Participan en algún espacio de militancia?</p>
+      <div id="participaList"></div>
+    </section>
+
+    <hr class="sep" />
+
+    <section class="section-tight wrap">
+      <h2>En sus palabras</h2>
+      <p class="muted">Una muestra de testimonios cargados por los y las propias participantes.</p>
+      <div id="quotesList" style="display:flex; flex-direction:column; gap:10px;"></div>
+    </section>
+
+    <section class="section wrap center no-print">
+      <div class="card">
+        <h2 class="mt-0" style="font-size:19px;">Explorá por distrito</h2>
+        <p>Este resumen es nacional. Para el detalle de cada provincia, entrá al mapa federal.</p>
+        <a class="btn btn-secondary btn-block" href="mapa.html">Ver el mapa federal</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" id="site-footer"></footer>
+
+  <script src="assets/js/vendor/papaparse.min.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/provinces.js"></script>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/nav.js"></script>
+  <script src="assets/js/sintesis.js"></script>
+</body>
+</html>
