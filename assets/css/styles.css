@@ -306,11 +306,15 @@ button { font-family: inherit; }
 }
 
 /* ---------- Secciones / tarjetas ---------- */
-.section { padding: 40px 0; }
-.section-tight { padding: 24px 0; }
+/* padding-block (no el shorthand "padding") a propósito: estas clases
+   siempre se usan junto con .wrap ("section wrap", "section-tight wrap"),
+   y un padding de 4 lados pisaría el padding-inline de .wrap dejando el
+   contenido pegado al borde del teléfono. */
+.section { padding-block: 40px; }
+.section-tight { padding-block: 24px; }
 @media (min-width: 1024px) {
-  .section { padding: 56px 0; }
-  .section-tight { padding: 32px 0; }
+  .section { padding-block: 56px; }
+  .section-tight { padding-block: 32px; }
 }
 .eyebrow {
   display: inline-flex;
@@ -332,18 +336,22 @@ button { font-family: inherit; }
   border-radius: var(--radius-l);
   padding: 20px;
   box-shadow: var(--shadow-s);
+  transition: transform .18s ease, box-shadow .18s ease;
 }
 .card + .card { margin-top: 12px; }
+@media (hover: hover) and (pointer: fine) {
+  .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-m); }
+}
 @media (min-width: 1024px) {
   .card { padding: 26px; }
 }
 
 .hero {
-  padding: 36px 0 8px;
+  padding-block: 36px 8px;
   text-align: center;
 }
 @media (min-width: 1024px) {
-  .hero { padding: 52px 0 12px; }
+  .hero { padding-block: 52px 12px; }
 }
 .hero h1 {
   font-size: clamp(28px, 8vw, 38px);
@@ -881,6 +889,21 @@ blockquote.testimonio footer {
   :root:not([data-theme="light"]) .drive-link-card h3 { color: var(--sky); }
 }
 
+/* ---------- Animaciones de entrada (scroll reveal) ---------- */
+/* La clase la suma assets/js/reveal.js; si el script no corre por algún
+   motivo, el contenido nunca queda con .reveal sin .is-visible, así que
+   siempre es visible por defecto (no depende de JS para mostrarse). */
+.reveal {
+  /* Ojo: nunca opacity:0. Si algo captura la página sin scrollear de
+     verdad (una captura automática, un crawler, un lector veloz), el
+     contenido tiene que seguir siendo legible — apenas más tenue y
+     un poco más abajo — nunca leerse como "vacío" o roto. */
+  opacity: .5;
+  transform: translateY(10px);
+  transition: opacity .5s cubic-bezier(.16, .8, .24, 1), transform .5s cubic-bezier(.16, .8, .24, 1);
+}
+.reveal.is-visible { opacity: 1; transform: translateY(0); }
+
 /* ---------- Utilidades ---------- */
 .center { text-align: center; }
 .mt-0 { margin-top: 0; }
@@ -898,5 +921,6 @@ blockquote.testimonio footer {
 @media print {
   .site-header, .site-footer, .no-print { display: none !important; }
   body { background: #fff; }
-  .section { padding: 6px 0; }
+  .section { padding-block: 6px; }
+  .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
 }
