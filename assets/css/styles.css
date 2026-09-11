@@ -785,6 +785,67 @@ blockquote.testimonio footer {
 
 .form-not-configured { text-align: center; padding: 36px 20px; }
 
+/* ---------- Insumos: items de Drive explorables ---------- */
+.drive-list { display: flex; flex-direction: column; gap: 12px; }
+.drive-item { padding: 0; overflow: hidden; }
+.drive-item__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 18px;
+}
+.drive-item__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 14.5px;
+  color: var(--navy);
+  text-decoration: none;
+  min-width: 0;
+}
+:root[data-theme="dark"] .drive-item__title { color: var(--sky); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .drive-item__title { color: var(--sky); }
+}
+.drive-item__icon { flex: none; width: 20px; height: 20px; }
+.drive-item__icon svg { width: 100%; height: 100%; }
+.drive-item__toggle {
+  flex: none;
+  appearance: none;
+  border: 1.5px solid var(--hairline);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 12.5px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.drive-item__panel { border-top: 1px solid var(--hairline); }
+.drive-item__frame {
+  width: 100%;
+  height: 340px;
+  border: none;
+  display: block;
+  background: var(--surface-2);
+}
+
+.drive-link-card {
+  display: flex;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: transform .1s ease;
+}
+.drive-link-card:active { transform: scale(.99); }
+.drive-link-card h3 { color: var(--navy); }
+:root[data-theme="dark"] .drive-link-card h3 { color: var(--sky); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .drive-link-card h3 { color: var(--sky); }
+}
+
 /* ---------- Utilidades ---------- */
 .center { text-align: center; }
 .mt-0 { margin-top: 0; }
