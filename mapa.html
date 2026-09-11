@@ -9,6 +9,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="assets/img/icon-192.png" />
   <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png" />
   <meta name="theme-color" content="#04537a" />
+  <link rel="stylesheet" href="assets/js/vendor/leaflet/leaflet.css" />
   <link rel="stylesheet" href="assets/css/styles.css" />
 </head>
 <body data-page="mapa">
@@ -32,8 +33,8 @@
 
       <div class="map-legend" id="mapLegend"></div>
 
-      <div class="tile-grid" id="tileGrid"></div>
-      <p class="muted center small">Mapa esquemático (cartograma), pensado para que cada distrito sea tocable en el celular — no es un mapa geográfico exacto.</p>
+      <div id="mapCanvas" class="map-canvas"></div>
+      <p class="muted center small">Mapa interactivo: acercá con dos dedos, arrastrá para moverte y tocá una provincia (o el punto de CABA) para ver su detalle.</p>
     </section>
 
     <section class="section-tight wrap">
@@ -57,6 +58,7 @@
   <footer class="site-footer" id="site-footer"></footer>
 
   <script src="assets/js/vendor/papaparse.min.js"></script>
+  <script src="assets/js/vendor/leaflet/leaflet.js"></script>
   <script src="assets/js/config.js"></script>
   <script src="assets/js/provinces.js"></script>
   <script src="assets/js/data.js"></script>
