@@ -85,9 +85,12 @@ mantenimiento innecesarios para este caso de uso.
 (`assets/data/argentina-provincias.geojson`) son datos de límites
 administrativos derivados de fuentes del Instituto Geográfico Nacional,
 tomados de [alvarezgarcia/provincias-argentinas-geojson](https://github.com/alvarezgarcia/provincias-argentinas-geojson).
-El mapa base es de [CARTO](https://carto.com/attributions) sobre datos de
-© [OpenStreetMap](https://www.openstreetmap.org/copyright) (crédito visible
-en la esquina del mapa). La librería de mapas es [Leaflet](https://leafletjs.com/) (licencia BSD-2-Clause).
+El mapa está hecho "de cero": no usa imágenes de mapa de terceros (nada de
+Google/OSM/CARTO) — solo dibuja esos polígonos propios sobre un fondo
+liso, así no lleva ninguna marca de agua ni depende de un servicio externo
+en tiempo real. La librería de mapas es [Leaflet](https://leafletjs.com/)
+(licencia BSD-2-Clause, autoalojada), que solo se usa para el pan/zoom y
+la interacción — no para traer imágenes de fondo.
 
 ## Publicar el sitio
 
