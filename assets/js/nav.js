@@ -31,11 +31,11 @@
           <img class="brand__logo" src="assets/img/jovenesfr-logo.png" alt="Jóvenes FR" />
           <span class="brand__title">MEJOR&nbsp;QUE&nbsp;DECIR</span>
         </a>
+        <nav class="site-nav" id="siteNav">${navLinks}</nav>
         <button class="nav-toggle" id="navToggle" aria-label="Abrir menú" aria-expanded="false">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
       </div>
-      <nav class="site-nav" id="siteNav">${navLinks}</nav>
     `;
   }
 

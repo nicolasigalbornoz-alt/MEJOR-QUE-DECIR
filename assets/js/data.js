@@ -1,10 +1,12 @@
 /**
  * Carga y procesamiento de datos de la encuesta "MEJOR QUE DECIR".
- * Fuente: CSV publicado de la hoja de respuestas del Google Form
- * (ver config.js). Si no hay CSV configurado, usa datos de ejemplo.
+ * Fuente preferida: el Google Apps Script (appsScriptUrl en config.js),
+ * que lee en vivo la hoja "Respuestas encuesta" de la planilla. Si no
+ * está configurado, cae a un CSV publicado (csvUrl, legado) y si tampoco
+ * hay eso, a los datos de ejemplo.
  *
  * Todo el procesamiento ocurre en el navegador de quien visita el sitio:
- * no hay backend propio, el "backend" es el Google Form + Google Sheets.
+ * no hay backend propio, el "backend" es Google Sheets + Apps Script.
  */
 (function () {
   const ESCALA_SITUACION = { "muy mala": 1, "mala": 2, "regular": 3, "buena": 4, "muy buena": 5 };
@@ -26,9 +28,9 @@
     });
   }
 
-  function splitMulti(cell) {
+  function splitMulti(cell, sep) {
     if (!cell) return [];
-    return cell.split(",").map((s) => s.trim()).filter(Boolean);
+    return cell.split(sep || ",").map((s) => s.trim()).filter(Boolean);
   }
 
   function parseCsv(text) {
@@ -72,6 +74,39 @@
         edad: get(kEdad),
         participa: get(kParticipa),
         nombre: get(kNombre),
+      });
+    }
+    return out;
+  }
+
+  // Filas que vienen directo del Apps Script (JSON, orden fijo de columnas
+  // — ver RESPUESTA_HEADERS en apps-script/Code.gs). A diferencia del CSV
+  // de un Google Form, acá el esquema lo definimos nosotros mismos, así
+  // que no hace falta adivinar columnas por el texto de la pregunta.
+  function parseAppsScriptRows(json) {
+    const rows = Array.isArray(json && json.rows) ? json.rows : [];
+    const out = [];
+    for (const r of rows) {
+      if (!r || r.every((c) => c === "" || c == null)) continue;
+      const provinciaRaw = (r[2] || "").toString().trim();
+      const provinceId = window.MQD_matchProvince(provinciaRaw);
+      if (!provinceId) continue;
+
+      const situ = Number(r[4]);
+      const vision = Number(r[8]);
+      out.push({
+        provinceId,
+        provinciaRaw,
+        localidad: (r[3] || "").toString().trim(),
+        situacionEscala: Number.isFinite(situ) && r[4] !== "" ? situ : null,
+        situacionTexto: (r[5] || "").toString().trim(),
+        problemas: splitMulti((r[6] || "").toString(), ";"),
+        necesidades: splitMulti((r[7] || "").toString(), ";"),
+        visionEscala: Number.isFinite(vision) && r[8] !== "" ? vision : null,
+        visionFrase: (r[9] || "").toString().trim(),
+        edad: (r[10] || "").toString().trim(),
+        participa: (r[11] || "").toString().trim(),
+        nombre: (r[1] || "").toString().trim(),
       });
     }
     return out;
@@ -144,30 +179,46 @@
     return res.text();
   }
 
+  async function fetchJson(url) {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return res.json();
+  }
+
   window.MQD_DATA = {
     async load() {
       const cfg = window.MQD_CONFIG;
-      let text = null;
+      let rows = null;
       let isDemo = false;
 
-      if (cfg.csvUrl && cfg.csvUrl.trim()) {
+      if (cfg.appsScriptUrl && cfg.appsScriptUrl.trim()) {
         try {
-          text = await fetchText(cfg.csvUrl.trim());
+          const url = cfg.appsScriptUrl.trim().replace(/\/$/, "") + "?action=responses";
+          const json = await fetchJson(url);
+          rows = parseAppsScriptRows(json);
+        } catch (e) {
+          console.warn("No se pudo leer appsScriptUrl, se prueba csvUrl / demo.", e);
+        }
+      }
+
+      if (rows == null && cfg.csvUrl && cfg.csvUrl.trim()) {
+        try {
+          rows = parseCsv(await fetchText(cfg.csvUrl.trim()));
         } catch (e) {
           console.warn("No se pudo leer csvUrl, se usa el modo demo.", e);
         }
       }
-      if (!text && cfg.useDemoFallback) {
+
+      if (rows == null && cfg.useDemoFallback) {
         try {
-          text = await fetchText(cfg.demoCsvPath);
+          rows = parseCsv(await fetchText(cfg.demoCsvPath));
           isDemo = true;
         } catch (e) {
           console.error("No se pudo cargar el CSV de ejemplo.", e);
         }
       }
-      if (!text) return { isDemo: false, empty: true, ...aggregate([]) };
 
-      const rows = parseCsv(text);
+      if (rows == null) return { isDemo: false, empty: true, ...aggregate([]) };
       return { isDemo, empty: rows.length === 0, ...aggregate(rows) };
     },
   };

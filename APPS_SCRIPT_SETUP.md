@@ -1,0 +1,106 @@
+# Cómo conectar el backend (Google Apps Script + tu planilla)
+
+La encuesta ya **no** usa un Google Form embebido: es un formulario propio
+(con el diseño del sitio) que escribe directo en tu Google Sheets, y que
+además reconoce el nombre de cada inscripto contra el padrón del
+encuentro para autocompletar provincia y ciudad. Todo esto corre con
+**Google Apps Script**, gratis, sin servidor propio.
+
+Este instructivo lleva ~10 minutos y lo hace cualquier persona con acceso
+de edición a la planilla `Encuentro Nacional de Jóvenes FR - sábado 19 de
+septiembre de 2026`.
+
+---
+
+## 1) Abrí el editor de Apps Script
+
+1. Abrí la planilla: `https://docs.google.com/spreadsheets/d/1BHGnWbGkyAyWvwK-B2SHgbPKmhMpb7mBEjE9ALw3ye0/edit`
+2. Menú **Extensiones → Apps Script**.
+3. Se abre un editor con un archivo `Código.gs` vacío (o con `function myFunction() {}`).
+
+## 2) Pegá el código
+
+1. Borrá todo el contenido de `Código.gs`.
+2. Copiá y pegá el contenido completo de [`apps-script/Code.gs`](apps-script/Code.gs) de este repo.
+3. Guardá (ícono de disco o `Ctrl/Cmd + S`). Ponele un nombre al proyecto, por ejemplo "MEJOR QUE DECIR — backend".
+
+## 3) Revisá el nombre de las columnas del padrón
+
+Al principio del script hay estas líneas:
+
+```js
+const PADRON_SHEET_NAME = "Respuestas de formulario 1";
+const PADRON_COLS = {
+  nombre: "Nombre y apellido",
+  provincia: "¿De qué provincia/distrito sos?",
+  ciudad: "¿De qué ciudad sos?",
+};
+```
+
+Verificá que `PADRON_SHEET_NAME` sea el nombre exacto de la **pestaña**
+(hoja) donde están los inscriptos, y que los tres nombres de columna
+coincidan con los encabezados reales de esa hoja. Si no coinciden, el
+autocompletado no va a encontrar a nadie (pero la encuesta igual va a
+poder guardar respuestas sin problema).
+
+## 4) Desplegar como aplicación web
+
+1. Arriba a la derecha, botón **Implementar → Nueva implementación**.
+2. Tipo: **Aplicación web**.
+3. Configuración:
+   - **Ejecutar como**: Yo (tu cuenta).
+   - **Quién tiene acceso**: **Cualquier usuario**.
+4. Tocá **Implementar**.
+5. La primera vez te va a pedir autorizar permisos: elegí tu cuenta →
+   "Avanzado" → "Ir a [nombre del proyecto] (no seguro)" → Permitir. Es tu
+   propio script, ese aviso es normal en Apps Script.
+6. Copiá la **URL de la aplicación web** que te da al final (termina en
+   `/exec`).
+
+## 5) Pegar la URL en el sitio
+
+Abrí `assets/js/config.js` y completá:
+
+```js
+window.MQD_CONFIG = {
+  ...
+  appsScriptUrl: "TU_URL_TERMINADA_EN_/exec",
+  ...
+};
+```
+
+Guardá, subí el cambio y listo:
+
+- La encuesta (`encuesta.html`) ya guarda cada respuesta directo en la
+  hoja **"Respuestas encuesta"** de tu planilla (se crea sola la primera vez).
+- El buscador de nombre autocompleta provincia y ciudad usando el padrón,
+  sin exponer teléfono, mail, fecha de nacimiento ni Instagram de nadie.
+- El mapa federal y la síntesis leen esa misma hoja en vivo.
+
+---
+
+## Si volvés a implementar (redeploy)
+
+Cada vez que edites `Code.gs`, tenés que crear una **nueva versión** del
+despliegue para que los cambios se vean reflejados:
+**Implementar → Administrar implementaciones → ✏️ (editar) → Versión: Nueva versión → Implementar**.
+La URL `/exec` no cambia.
+
+## Preguntas frecuentes
+
+**¿Esto tiene algún costo?** No. Apps Script es gratis dentro de los
+límites normales de una cuenta de Google personal (más que suficiente
+para un encuentro de un día).
+
+**¿Quién puede ver las respuestas?** Solo quienes tengan acceso a la
+planilla de Google Sheets — el sitio público solo puede *escribir* una
+respuesta nueva y *leer* la hoja "Respuestas encuesta" agregada (no el
+padrón completo).
+
+**¿Qué pasa si cambio las preguntas del formulario en el sitio?** Ajustá
+en paralelo `RESPUESTA_HEADERS` y `appendResponse()` en `Code.gs`, y las
+funciones de `assets/js/encuesta.js` que arman el objeto que se envía.
+
+**¿Puedo seguir usando un Google Form en cambio?** El repo ya no incluye
+esa opción (se reemplazó por este formulario propio para poder hacer el
+autocompletado), pero el código es simple de adaptar si lo preferís.
