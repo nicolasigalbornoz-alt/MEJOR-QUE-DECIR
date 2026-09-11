@@ -58,7 +58,34 @@ function doGet(e) {
   const action = (e.parameter.action || "").toLowerCase();
   if (action === "search") return handleSearch(e);
   if (action === "responses") return handleResponses();
-  return jsonOut({ error: "Acción desconocida. Usá ?action=search o ?action=responses" });
+  if (action === "debug") return handleDebug();
+  return jsonOut({ error: "Acción desconocida. Usá ?action=search, ?action=responses o ?action=debug" });
+}
+
+// Diagnóstico temporal: a qué planilla está atado el script y qué
+// pestañas ve, para depurar el autocompletado si no encuentra a nadie.
+// Es de solo lectura, no expone filas del padrón, solo nombres de hoja
+// y encabezados. Se puede borrar una vez que todo funcione.
+function handleDebug() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const info = {
+      spreadsheetName: ss ? ss.getName() : null,
+      spreadsheetId: ss ? ss.getId() : null,
+      sheetNames: ss ? ss.getSheets().map((s) => s.getName()) : [],
+    };
+    const padron = ss ? ss.getSheetByName(PADRON_SHEET_NAME) : null;
+    info.padronSheetNameBuscado = PADRON_SHEET_NAME;
+    info.padronEncontrado = !!padron;
+    if (padron) {
+      const values = padron.getDataRange().getValues();
+      info.padronHeaders = values.length ? values[0] : [];
+      info.padronFilas = values.length - 1;
+    }
+    return jsonOut(info);
+  } catch (err) {
+    return jsonOut({ error: String(err && err.message ? err.message : err) });
+  }
 }
 
 function doPost(e) {
