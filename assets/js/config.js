@@ -14,7 +14,7 @@ window.MQD_CONFIG = {
   // Con esto conectado: la encuesta guarda respuestas en tu planilla,
   // el buscador de nombre autocompleta provincia/ciudad, y el mapa +
   // la síntesis leen los datos reales.
-  appsScriptUrl: "",
+  appsScriptUrl: "https://script.google.com/macros/s/AKfycby3ga1UywXzpQxD_gQmxxxwxAruncOWiP1KPS8vtj1utCSslQnwxfP5k-Mu3atRkql_3A/exec",
 
   // Alternativa/legado: un link CSV publicado (Google Sheets → Archivo →
   // Compartir → Publicar en la Web → CSV). Se usa solo si appsScriptUrl
