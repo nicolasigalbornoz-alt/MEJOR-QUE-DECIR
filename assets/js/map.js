@@ -1,6 +1,7 @@
 /**
- * Mapa federal — mapa interactivo real (Leaflet + polígonos de las 23
- * provincias + CABA como punto), sin claves ni servicios de pago.
+ * Mapa federal — mapa interactivo hecho de cero con Leaflet: polígonos
+ * reales de las 23 provincias + CABA como punto, sobre fondo liso propio
+ * (sin imágenes de mapa de terceros, así no lleva ninguna marca de agua).
  * Cada distrito es tocable; el color codifica la cantidad de respuestas
  * (escala secuencial de un solo tono, claro→oscuro).
  */
@@ -12,12 +13,6 @@
 
   function cssVar(name) {
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  }
-  function isDarkMode() {
-    const t = document.documentElement.getAttribute("data-theme");
-    if (t === "dark") return true;
-    if (t === "light") return false;
-    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
   }
 
   function bucketFor(count, maxCount) {
@@ -123,18 +118,6 @@
     return res.json();
   }
 
-  function tileLayerFor(dark) {
-    const url = dark
-      ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-      : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
-    return L.tileLayer(url, {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: "abcd",
-      maxZoom: 12,
-      minZoom: 3,
-    });
-  }
-
   async function init() {
     const mapEl = document.getElementById("mapCanvas");
     const legend = document.getElementById("mapLegend");
@@ -167,22 +150,19 @@
 
     const sheet = initSheet(data);
 
-    const dark = isDarkMode();
+    // Mapa "de cero": sin imágenes de fondo de terceros (ni Google Maps, ni
+    // OSM/CARTO), así no lleva ninguna marca de agua. Solo se dibujan los
+    // polígonos propios (assets/data/argentina-provincias.geojson) sobre un
+    // fondo liso — al ser un mapa temático (color = cantidad de respuestas),
+    // no hace falta calle ni satélite de base.
     const map = L.map(mapEl, {
       zoomControl: true,
-      attributionControl: true,
-      minZoom: 3,
-      maxZoom: 12,
+      attributionControl: false,
+      minZoom: 4,
+      maxZoom: 8,
+      zoomSnap: 0.25,
       worldCopyJump: false,
     }).setView([-38.4, -63.6], 4);
-
-    let tiles = tileLayerFor(dark).addTo(map);
-    if (window.matchMedia) {
-      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
-        map.removeLayer(tiles);
-        tiles = tileLayerFor(isDarkMode()).addTo(map);
-      });
-    }
 
     const hairline = cssVar("--hairline") || "#e1e0d9";
     const surface2 = cssVar("--surface-2") || "#f3f6f7";
