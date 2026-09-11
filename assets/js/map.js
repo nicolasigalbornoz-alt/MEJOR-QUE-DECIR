@@ -1,17 +1,29 @@
 /**
- * Mapa federal — cartograma de teselas de la Argentina.
- * Cada distrito es una tesela tocable; el color codifica la cantidad de
- * respuestas recibidas (escala secuencial de un solo tono, claro→oscuro).
+ * Mapa federal — mapa interactivo real (Leaflet + polígonos de las 23
+ * provincias + CABA como punto), sin claves ni servicios de pago.
+ * Cada distrito es tocable; el color codifica la cantidad de respuestas
+ * (escala secuencial de un solo tono, claro→oscuro).
  */
 (function () {
-  const RAMP = ["seq-150", "seq-250", "seq-350", "seq-450", "seq-550", "seq-650"];
+  const RAMP_VARS = ["--seq-150", "--seq-250", "--seq-350", "--seq-450", "--seq-550", "--seq-650"];
   const SITUACION_LABEL = { 1: "Muy mala", 2: "Mala", 3: "Regular", 4: "Buena", 5: "Muy buena" };
   const VISION_LABEL = { "-2": "Muy pesimista", "-1": "Pesimista", "0": "Neutral", "1": "Optimista", "2": "Muy optimista" };
+  const GEOJSON_URL = "assets/data/argentina-provincias.geojson";
+
+  function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+  function isDarkMode() {
+    const t = document.documentElement.getAttribute("data-theme");
+    if (t === "dark") return true;
+    if (t === "light") return false;
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  }
 
   function bucketFor(count, maxCount) {
     if (count <= 0) return -1;
     const ratio = maxCount <= 1 ? 1 : (count - 1) / (maxCount - 1);
-    return Math.min(RAMP.length - 1, Math.floor(ratio * RAMP.length));
+    return Math.min(RAMP_VARS.length - 1, Math.floor(ratio * RAMP_VARS.length));
   }
 
   function fmtAvg(sum, n, labels) {
@@ -21,37 +33,12 @@
   }
 
   function renderLegend(el) {
+    const ramp = RAMP_VARS.map((v) => cssVar(v));
     el.innerHTML = `
       <span>Sin respuestas</span>
-      <span class="ramp">${RAMP.map((s) => `<span style="background:var(--${s})"></span>`).join("")}</span>
+      <span class="ramp">${ramp.map((c) => `<span style="background:${c}"></span>`).join("")}</span>
       <span>Más respuestas</span>
     `;
-  }
-
-  function renderGrid(container, data) {
-    container.innerHTML = "";
-    const provinces = window.MQD_PROVINCES;
-    for (const p of provinces) {
-      const stat = data.byProvince[p.id];
-      const bucket = bucketFor(stat.count, data.maxCount);
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "tile";
-      btn.style.gridColumn = `${p.col} / span ${p.colSpan || 1}`;
-      btn.style.gridRow = `${p.row} / span ${p.rowSpan || 1}`;
-      if (bucket >= 0) {
-        btn.style.background = `var(--${RAMP[bucket]})`;
-        if (bucket >= 3) btn.style.color = "#fff";
-      } else {
-        btn.style.background = "var(--surface-2)";
-        btn.style.borderStyle = "dashed";
-        btn.style.color = "var(--text-muted)";
-      }
-      btn.dataset.province = p.id;
-      btn.innerHTML = `${p.name}${stat.count ? `<b>${stat.count}</b>` : ""}`;
-      btn.setAttribute("aria-label", `${p.name}: ${stat.count} respuestas`);
-      container.appendChild(btn);
-    }
   }
 
   function buildSheetContent(stat) {
@@ -104,35 +91,52 @@
     const backdrop = document.getElementById("sheetBackdrop");
     const sheet = document.getElementById("sheet");
     const body = document.getElementById("sheetBody");
-    const grid = document.getElementById("tileGrid");
+    let resetSelection = null;
 
-    function open(provinceId) {
+    function open(provinceId, onSelect) {
       const stat = data.byProvince[provinceId];
+      if (!stat) return;
       body.innerHTML = buildSheetContent(stat);
       backdrop.classList.add("is-open");
       sheet.classList.add("is-open");
-      grid.querySelectorAll(".tile").forEach((t) => t.classList.toggle("is-selected", t.dataset.province === provinceId));
       document.body.style.overflow = "hidden";
+      if (resetSelection) resetSelection();
+      resetSelection = onSelect ? onSelect() : null;
     }
     function close() {
       backdrop.classList.remove("is-open");
       sheet.classList.remove("is-open");
-      grid.querySelectorAll(".tile").forEach((t) => t.classList.remove("is-selected"));
       document.body.style.overflow = "";
+      if (resetSelection) { resetSelection(); resetSelection = null; }
     }
 
-    grid.addEventListener("click", (e) => {
-      const tile = e.target.closest(".tile");
-      if (!tile) return;
-      open(tile.dataset.province);
-    });
     backdrop.addEventListener("click", close);
     document.getElementById("sheetClose").addEventListener("click", close);
     document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+
+    return { open, close };
+  }
+
+  async function loadGeoJson() {
+    const res = await fetch(GEOJSON_URL, { cache: "force-cache" });
+    if (!res.ok) throw new Error("No se pudo cargar el mapa (" + res.status + ")");
+    return res.json();
+  }
+
+  function tileLayerFor(dark) {
+    const url = dark
+      ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+      : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+    return L.tileLayer(url, {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: "abcd",
+      maxZoom: 12,
+      minZoom: 3,
+    });
   }
 
   async function init() {
-    const grid = document.getElementById("tileGrid");
+    const mapEl = document.getElementById("mapCanvas");
     const legend = document.getElementById("mapLegend");
     const banner = document.getElementById("dataBanner");
     const statTotal = document.getElementById("statTotal");
@@ -141,7 +145,10 @@
 
     renderLegend(legend);
 
-    const data = await window.MQD_DATA.load();
+    const [geo, data] = await Promise.all([
+      loadGeoJson().catch((e) => { console.error(e); return null; }),
+      window.MQD_DATA.load(),
+    ]);
 
     banner.classList.remove("skeleton");
     if (data.isDemo) {
@@ -154,13 +161,88 @@
       banner.classList.add("live");
       banner.innerHTML = `<span class="dot"></span> Datos en vivo del Encuentro Nacional de Jóvenes FR.`;
     }
-
     statTotal.textContent = data.totalResponses;
     statProv.textContent = data.totalProvinces;
     statLoc.textContent = data.totalLocalidades;
 
-    renderGrid(grid, data);
-    initSheet(data);
+    const sheet = initSheet(data);
+
+    const dark = isDarkMode();
+    const map = L.map(mapEl, {
+      zoomControl: true,
+      attributionControl: true,
+      minZoom: 3,
+      maxZoom: 12,
+      worldCopyJump: false,
+    }).setView([-38.4, -63.6], 4);
+
+    let tiles = tileLayerFor(dark).addTo(map);
+    if (window.matchMedia) {
+      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+        map.removeLayer(tiles);
+        tiles = tileLayerFor(isDarkMode()).addTo(map);
+      });
+    }
+
+    const hairline = cssVar("--hairline") || "#e1e0d9";
+    const surface2 = cssVar("--surface-2") || "#f3f6f7";
+    const navy = cssVar("--navy") || "#04537a";
+
+    let selectedLayer = null;
+    function baseStyleFor(provinceId) {
+      const stat = data.byProvince[provinceId];
+      const bucket = bucketFor(stat.count, data.maxCount);
+      const fill = bucket >= 0 ? cssVar(RAMP_VARS[bucket]) : surface2;
+      return {
+        fillColor: fill,
+        fillOpacity: 0.82,
+        color: "#fff",
+        weight: 1.2,
+        dashArray: bucket >= 0 ? null : "3,3",
+      };
+    }
+
+    function selectLayer(layer, provinceId) {
+      layer.setStyle({ weight: 3, color: navy });
+      layer.bringToFront();
+      return () => layer.setStyle(baseStyleFor(provinceId));
+    }
+
+    let geoLayer = null;
+    if (geo) {
+      geoLayer = L.geoJSON(geo, {
+        style: (feature) => baseStyleFor(feature.properties.id),
+        onEachFeature: (feature, layer) => {
+          const pid = feature.properties.id;
+          layer.on("click", () => sheet.open(pid, () => selectLayer(layer, pid)));
+          layer.on("mouseover", () => { if (layer !== selectedLayer) layer.setStyle({ weight: 2.4 }); });
+          layer.on("mouseout", () => { if (layer !== selectedLayer) layer.setStyle(baseStyleFor(pid)); });
+        },
+      }).addTo(map);
+
+      try { map.fitBounds(geoLayer.getBounds(), { padding: [12, 12] }); } catch (e) { /* noop */ }
+    }
+
+    // CABA no tiene polígono propio en el dataset (queda dentro del contorno
+    // de Buenos Aires): se muestra como un punto tocable en su centroide.
+    const caba = window.MQD_PROVINCE_BY_ID.caba;
+    if (caba && caba.point) {
+      const stat = data.byProvince.caba;
+      const bucket = bucketFor(stat.count, data.maxCount);
+      const fill = bucket >= 0 ? cssVar(RAMP_VARS[bucket]) : surface2;
+      const marker = L.circleMarker(caba.point, {
+        radius: 9,
+        fillColor: fill,
+        fillOpacity: 0.95,
+        color: "#fff",
+        weight: 2,
+      }).addTo(map);
+      marker.on("click", () => sheet.open("caba", () => {
+        marker.setStyle({ weight: 2 });
+        return () => marker.setStyle({ weight: 2 });
+      }));
+      marker.bindTooltip("CABA", { direction: "top", offset: [0, -6] });
+    }
   }
 
   document.addEventListener("DOMContentLoaded", init);

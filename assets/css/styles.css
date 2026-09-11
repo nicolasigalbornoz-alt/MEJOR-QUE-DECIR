@@ -433,7 +433,7 @@ button { font-family: inherit; }
 }
 .data-banner .dot { width: 8px; height: 8px; border-radius: 999px; background: currentColor; flex: none; }
 
-/* ---------- Mapa federal (cartograma de teselas) ---------- */
+/* ---------- Mapa federal (Leaflet + polígonos reales) ---------- */
 .map-legend {
   display: flex;
   align-items: center;
@@ -453,50 +453,25 @@ button { font-family: inherit; }
 }
 .map-legend .ramp span { flex: 1; }
 
-.tile-grid {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  grid-auto-rows: 50px;
-  gap: 6px;
+.map-canvas {
+  height: 62vh;
+  min-height: 440px;
+  max-height: 640px;
   margin: 18px 0;
-  min-width: 0;
-}
-.tile {
-  appearance: none;
-  border: 1px solid var(--hairline);
-  border-radius: 10px;
-  background: var(--seq-100);
-  color: var(--text-primary);
-  min-width: 0;
-  min-height: 0;
-  width: 100%;
-  height: 100%;
+  border-radius: var(--radius-l);
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 2px;
-  font-size: 8.3px;
-  font-weight: 700;
-  line-height: 1.15;
-  text-align: center;
-  word-break: break-word;
-  hyphens: auto;
-  cursor: pointer;
-  transition: transform .1s ease, box-shadow .1s ease;
+  border: 1px solid var(--hairline);
+  box-shadow: var(--shadow-s);
+  background: var(--surface-2);
 }
-.tile:active { transform: scale(.94); }
-.tile.is-selected { outline: 2.5px solid var(--navy); outline-offset: 1px; }
-.tile b { display: block; font-size: 10.5px; font-variant-numeric: tabular-nums; }
-.tile.empty-tile { visibility: hidden; }
-@media (min-width: 420px) { .tile-grid { grid-auto-rows: 56px; } .tile { font-size: 9.4px; } .tile b { font-size: 12px; } }
-@media (min-width: 560px) { .tile-grid { grid-auto-rows: 62px; } .tile { font-size: 10.4px; } }
+.leaflet-container { font-family: 'Outfit', system-ui, sans-serif; background: var(--surface-2); }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--surface); color: var(--text-primary); }
+.leaflet-control-attribution { font-size: 10px; }
 
 .sheet-backdrop {
   position: fixed; inset: 0;
   background: rgba(4, 12, 18, .45);
-  z-index: 80;
+  z-index: 2000;
   opacity: 0;
   pointer-events: none;
   transition: opacity .18s ease;
@@ -505,7 +480,7 @@ button { font-family: inherit; }
 .sheet {
   position: fixed;
   left: 0; right: 0; bottom: 0;
-  z-index: 81;
+  z-index: 2001;
   background: var(--surface);
   border-radius: 22px 22px 0 0;
   box-shadow: 0 -10px 30px rgba(0,0,0,.25);

@@ -17,7 +17,7 @@ y convierte esas respuestas en un **mapa federal** interactivo y un
 |---|---|
 | `index.html` | Portada: qué es el proyecto, qué se pregunta, cómo funciona. |
 | `encuesta.html` | Encuesta embebida (Google Form). |
-| `mapa.html` | Mapa federal: cartograma tocable, un distrito por tesela. |
+| `mapa.html` | Mapa federal interactivo (Leaflet): provincias reales, tocable/pellizcable. |
 | `sintesis.html` | Documento de síntesis auto-generado, con botón de descarga/impresión. |
 
 ## Cómo funciona (sin backend propio)
@@ -55,17 +55,39 @@ data/
   respuestas-demo.csv Datos de ejemplo
 assets/
   css/styles.css      Sistema de diseño compartido
+  data/
+    argentina-provincias.geojson  Polígonos reales de las 23 provincias
   js/
     config.js         ⚙️ Único archivo que hay que editar para conectar datos reales
-    provinces.js       Distritos y su posición en el mapa
+    provinces.js       Distritos (id/nombre/región) + centroide de CABA
     data.js             Carga y procesa el CSV (real o de ejemplo)
     nav.js              Header/footer compartidos + menú móvil
-    map.js              Lógica del mapa federal
+    map.js              Mapa interactivo (Leaflet + GeoJSON + CABA como punto)
     sintesis.js          Lógica del documento de síntesis
-    vendor/papaparse.min.js  Parser de CSV (autoalojado)
+    vendor/
+      papaparse.min.js   Parser de CSV (autoalojado)
+      leaflet/           Librería de mapas (autoalojada, sin API key)
   img/                 Logo de Jóvenes FR + íconos
   fonts/               Tipografía Outfit (autoalojada)
 ```
+
+El mapa usa **Leaflet** (librería libre, sin clave de API ni facturación)
+con un mapa base de [CARTO](https://carto.com/attributions) y las 23
+provincias como polígonos reales; CABA se muestra como un punto en su
+centroide porque no tiene forma propia en el dataset de provincias. Se
+descartó Google Maps a propósito: pintar provincias por cantidad de
+respuestas es un mapa temático (choropleth), no un mapa de calles, y
+Google Maps para eso exigiría una clave de API y una cuenta de
+facturación de Google Cloud a cargo de Jóvenes FR — un costo y
+mantenimiento innecesarios para este caso de uso.
+
+**Créditos de datos geográficos**: los límites provinciales
+(`assets/data/argentina-provincias.geojson`) son datos de límites
+administrativos derivados de fuentes del Instituto Geográfico Nacional,
+tomados de [alvarezgarcia/provincias-argentinas-geojson](https://github.com/alvarezgarcia/provincias-argentinas-geojson).
+El mapa base es de [CARTO](https://carto.com/attributions) sobre datos de
+© [OpenStreetMap](https://www.openstreetmap.org/copyright) (crédito visible
+en la esquina del mapa). La librería de mapas es [Leaflet](https://leafletjs.com/) (licencia BSD-2-Clause).
 
 ## Publicar el sitio
 
@@ -85,7 +107,7 @@ hosting estático: no necesita Node, PHP ni base de datos.
 - **Fecha / nombre del encuentro**: `assets/js/config.js` → `eventoNombre`, `eventoFecha`.
 - **Google Form / Sheet**: `assets/js/config.js` → ver `FORM_SETUP.md`.
 - **Colores y tipografía**: variables al inicio de `assets/css/styles.css`.
-- **Distritos y disposición del mapa**: `assets/js/provinces.js`.
+- **Distritos y región de cada uno**: `assets/js/provinces.js`. Los polígonos del mapa están en `assets/data/argentina-provincias.geojson`.
 - **Logo**: `assets/img/jovenesfr-logo.png`, extraído del manual de marca
   oficial de Jóvenes FR (vectorial, alta resolución). No se agregó ningún
   otro logo ni isologo al sitio.

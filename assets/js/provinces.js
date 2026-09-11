@@ -1,36 +1,39 @@
 /**
- * Distritos federales (23 provincias + CABA) y su posición en el
- * cartograma de teselas (grilla 6 columnas), aproximando su ubicación
- * geográfica real para que el mapa se "lea" como la Argentina.
+ * Distritos federales (23 provincias + CABA).
  *
- * col crece de oeste a este. row crece de norte a sur.
+ * Las 23 provincias se dibujan como polígonos reales sobre el mapa
+ * (assets/data/argentina-provincias.geojson). CABA no entra como polígono
+ * separado en ese archivo (queda "adentro" del contorno de Buenos Aires),
+ * así que se dibuja aparte como un punto en su centroide oficial.
  */
 window.MQD_PROVINCES = [
-  { id: "jujuy",        name: "Jujuy",                region: "NOA",       col: 3, row: 1 },
-  { id: "salta",         name: "Salta",                 region: "NOA",       col: 3, row: 2 },
-  { id: "formosa",       name: "Formosa",               region: "NEA",       col: 5, row: 2 },
-  { id: "catamarca",     name: "Catamarca",             region: "NOA",       col: 2, row: 3 },
-  { id: "tucuman",       name: "Tucumán",               region: "NOA",       col: 3, row: 3 },
-  { id: "santiago",      name: "Santiago del Estero",   region: "NOA",       col: 4, row: 3 },
-  { id: "chaco",         name: "Chaco",                 region: "NEA",       col: 5, row: 3 },
-  { id: "misiones",      name: "Misiones",              region: "NEA",       col: 6, row: 3 },
-  { id: "rioja",         name: "La Rioja",              region: "Cuyo",      col: 2, row: 4 },
-  { id: "corrientes",    name: "Corrientes",            region: "NEA",       col: 5, row: 4 },
-  { id: "sanjuan",       name: "San Juan",              region: "Cuyo",      col: 1, row: 5 },
-  { id: "cordoba",       name: "Córdoba",               region: "Centro",    col: 3, row: 5 },
-  { id: "santafe",       name: "Santa Fe",              region: "Centro",    col: 4, row: 5 },
-  { id: "entrerios",     name: "Entre Ríos",            region: "Centro",    col: 5, row: 5 },
-  { id: "mendoza",       name: "Mendoza",               region: "Cuyo",      col: 1, row: 6 },
-  { id: "sanluis",       name: "San Luis",              region: "Cuyo",      col: 2, row: 6 },
-  { id: "pampa",         name: "La Pampa",              region: "Centro",    col: 2, row: 7 },
-  { id: "caba",          name: "CABA",                  region: "Centro",    col: 6, row: 7 },
-  { id: "buenosaires",   name: "Buenos Aires",          region: "Centro",    col: 4, row: 7, colSpan: 2, rowSpan: 2 },
-  { id: "neuquen",       name: "Neuquén",               region: "Patagonia", col: 1, row: 8 },
-  { id: "rionegro",      name: "Río Negro",             region: "Patagonia", col: 2, row: 8 },
-  { id: "chubut",        name: "Chubut",                region: "Patagonia", col: 1, row: 9, colSpan: 3 },
-  { id: "santacruz",     name: "Santa Cruz",            region: "Patagonia", col: 1, row: 10, colSpan: 3 },
-  { id: "tierradelfuego",name: "Tierra del Fuego",      region: "Patagonia", col: 2, row: 11 },
+  { id: "jujuy", name: "Jujuy", region: "NOA" },
+  { id: "salta", name: "Salta", region: "NOA" },
+  { id: "formosa", name: "Formosa", region: "NEA" },
+  { id: "catamarca", name: "Catamarca", region: "NOA" },
+  { id: "tucuman", name: "Tucumán", region: "NOA" },
+  { id: "santiago", name: "Santiago del Estero", region: "NOA" },
+  { id: "chaco", name: "Chaco", region: "NEA" },
+  { id: "misiones", name: "Misiones", region: "NEA" },
+  { id: "rioja", name: "La Rioja", region: "Cuyo" },
+  { id: "corrientes", name: "Corrientes", region: "NEA" },
+  { id: "sanjuan", name: "San Juan", region: "Cuyo" },
+  { id: "cordoba", name: "Córdoba", region: "Centro" },
+  { id: "santafe", name: "Santa Fe", region: "Centro" },
+  { id: "entrerios", name: "Entre Ríos", region: "Centro" },
+  { id: "mendoza", name: "Mendoza", region: "Cuyo" },
+  { id: "sanluis", name: "San Luis", region: "Cuyo" },
+  { id: "pampa", name: "La Pampa", region: "Centro" },
+  { id: "caba", name: "CABA", region: "Centro", point: [-34.6144420654301, -58.4458763250916] },
+  { id: "buenosaires", name: "Buenos Aires", region: "Centro" },
+  { id: "neuquen", name: "Neuquén", region: "Patagonia" },
+  { id: "rionegro", name: "Río Negro", region: "Patagonia" },
+  { id: "chubut", name: "Chubut", region: "Patagonia" },
+  { id: "santacruz", name: "Santa Cruz", region: "Patagonia" },
+  { id: "tierradelfuego", name: "Tierra del Fuego", region: "Patagonia" },
 ];
+
+window.MQD_PROVINCE_BY_ID = Object.fromEntries(window.MQD_PROVINCES.map((p) => [p.id, p]));
 
 // Normaliza texto para matchear nombres de provincia sin depender de
 // tildes, mayúsculas o variantes de escritura ("caba" / "ciudad de buenos aires").
