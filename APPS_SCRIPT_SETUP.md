@@ -14,14 +14,13 @@ decir" y "Relevamiento territorial" para el Relevamiento Territorial y
 Formativo.
 
 Este instructivo lleva ~10 minutos y lo hace cualquier persona con acceso
-de edición a la planilla `Encuentro Nacional de Jóvenes FR - sábado 19 de
-septiembre de 2026`.
+de edición a la planilla de trabajo (la que tiene el padrón de inscriptos).
 
 ---
 
 ## 1) Abrí el editor de Apps Script
 
-1. Abrí la planilla: `https://docs.google.com/spreadsheets/d/1BHGnWbGkyAyWvwK-B2SHgbPKmhMpb7mBEjE9ALw3ye0/edit`
+1. Abrí la planilla: `https://docs.google.com/spreadsheets/d/1WrS0vjjeUiRk9iKyYuR1SEJcd-qjrXC6QcU7jJhlrVE/edit`
 2. Menú **Extensiones → Apps Script**.
 3. Se abre un editor con un archivo `Código.gs` vacío (o con `function myFunction() {}`).
 
@@ -36,13 +35,20 @@ septiembre de 2026`.
 Al principio del script hay estas líneas:
 
 ```js
-const PADRON_SHEET_NAME = "Respuestas de formulario 1";
+const PADRON_SHEET_NAME = "Hoja 1";
 const PADRON_COLS = {
   nombre: "Nombre y apellido",
   provincia: "¿De qué provincia/distrito sos?",
   ciudad: "¿De qué ciudad sos?",
 };
 ```
+
+`PADRON_SHEET_NAME` tiene que ser el nombre **exacto** de la pestaña
+(hoja) donde están los inscriptos — mirá abajo de la planilla, las
+pestañas suelen llamarse "Hoja 1", "Respuestas de formulario 1", etc.
+según cómo se haya creado. Si no coincide con la realidad, el
+autocompletado no encuentra a nadie (podés confirmarlo con
+`?action=debug`, ver más abajo).
 
 Verificá que `PADRON_SHEET_NAME` sea el nombre exacto de la **pestaña**
 (hoja) donde están los inscriptos, y que los tres nombres de columna
@@ -106,6 +112,14 @@ Cada vez que edites `Code.gs`, tenés que crear una **nueva versión** del
 despliegue para que los cambios se vean reflejados:
 **Implementar → Administrar implementaciones → ✏️ (editar) → Versión: Nueva versión → Implementar**.
 La URL `/exec` no cambia.
+
+## Si el autocompletado no encuentra a nadie
+
+Abrí en el navegador `TU_URL_/exec?action=debug`. Te muestra a qué
+planilla está atado el script, qué pestañas ve, y si encontró
+`PADRON_SHEET_NAME` (con sus encabezados y cantidad de filas) — de solo
+lectura, no expone filas del padrón. Es la forma más rápida de detectar
+si `PADRON_SHEET_NAME` no coincide con el nombre real de la pestaña.
 
 ## Preguntas frecuentes
 

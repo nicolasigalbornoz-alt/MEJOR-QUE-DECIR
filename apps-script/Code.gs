@@ -16,7 +16,7 @@
  * Instalación: ver /APPS_SCRIPT_SETUP.md en el repo.
  */
 
-const PADRON_SHEET_NAME = "Respuestas de formulario 1"; // hoja con los inscriptos al encuentro (solo lectura)
+const PADRON_SHEET_NAME = "Hoja 1"; // hoja con los inscriptos al encuentro (solo lectura)
 const RESPUESTAS_SHEET_NAME = "Respuestas encuesta";     // hoja de "Mejor que decir" (se crea sola si no existe)
 const RELEVAMIENTO_SHEET_NAME = "Relevamiento territorial"; // hoja del Relevamiento Territorial (se crea sola)
 
