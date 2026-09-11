@@ -2,8 +2,10 @@
  * MEJOR QUE DECIR — backend en Google Apps Script.
  *
  * Qué hace:
- *  1) Recibe las respuestas de la encuesta (encuesta.html) y las guarda
- *     en una hoja nueva ("Respuestas encuesta") de esta misma planilla.
+ *  1) Recibe las respuestas de los formularios del sitio (encuesta.html y
+ *     relevamiento.html) y las guarda cada una en su propia hoja nueva de
+ *     esta misma planilla. NUNCA toca ni reescribe el padrón de
+ *     inscriptos: esa hoja solo se LEE, para el autocompletado.
  *  2) Busca coincidencias de nombre en el padrón de inscriptos (la hoja
  *     "Respuestas de formulario 1") para autocompletar provincia/ciudad
  *     — SOLO devuelve nombre, provincia y ciudad, nunca teléfono, mail,
@@ -14,8 +16,9 @@
  * Instalación: ver /APPS_SCRIPT_SETUP.md en el repo.
  */
 
-const PADRON_SHEET_NAME = "Respuestas de formulario 1"; // hoja con los inscriptos al encuentro
-const RESPUESTAS_SHEET_NAME = "Respuestas encuesta";     // hoja de la encuesta (se crea sola si no existe)
+const PADRON_SHEET_NAME = "Respuestas de formulario 1"; // hoja con los inscriptos al encuentro (solo lectura)
+const RESPUESTAS_SHEET_NAME = "Respuestas encuesta";     // hoja de "Mejor que decir" (se crea sola si no existe)
+const RELEVAMIENTO_SHEET_NAME = "Relevamiento territorial"; // hoja del Relevamiento Territorial (se crea sola)
 
 // Nombres de columna EXACTOS de la hoja de inscriptos (ajustar si difieren).
 const PADRON_COLS = {
@@ -39,6 +42,18 @@ const RESPUESTA_HEADERS = [
   "Participación",
 ];
 
+const RELEVAMIENTO_HEADERS = [
+  "Marca temporal",
+  "Nombre completo",
+  "Provincia",
+  "Localidad",
+  "Espacio político",
+  "Comisión de interés",
+  "Problemática de la localidad",
+  "Situación del distrito (1-5)",
+  "Situación (detalle)",
+];
+
 function doGet(e) {
   const action = (e.parameter.action || "").toLowerCase();
   if (action === "search") return handleSearch(e);
@@ -49,7 +64,11 @@ function doGet(e) {
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
-    appendResponse(data);
+    if (data.formulario === "relevamiento") {
+      appendRelevamiento(data);
+    } else {
+      appendResponse(data);
+    }
     return jsonOut({ ok: true });
   } catch (err) {
     return jsonOut({ ok: false, error: String(err && err.message ? err.message : err) });
@@ -107,17 +126,21 @@ function normalizeText(s) {
     .trim();
 }
 
-// ---------- Guardar respuestas de la encuesta ----------
+// ---------- Guardar respuestas ----------
 
-function getOrCreateResponseSheet() {
+function getOrCreateSheet(name, headers) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName(RESPUESTAS_SHEET_NAME);
+  let sheet = ss.getSheetByName(name);
   if (!sheet) {
-    sheet = ss.insertSheet(RESPUESTAS_SHEET_NAME);
-    sheet.appendRow(RESPUESTA_HEADERS);
+    sheet = ss.insertSheet(name);
+    sheet.appendRow(headers);
     sheet.setFrozenRows(1);
   }
   return sheet;
+}
+
+function getOrCreateResponseSheet() {
+  return getOrCreateSheet(RESPUESTAS_SHEET_NAME, RESPUESTA_HEADERS);
 }
 
 function appendResponse(data) {
@@ -135,6 +158,21 @@ function appendResponse(data) {
     (data.visionFrase || "").toString().trim(),
     (data.edad || "").toString().trim(),
     (data.participa || "").toString().trim(),
+  ]);
+}
+
+function appendRelevamiento(data) {
+  const sheet = getOrCreateSheet(RELEVAMIENTO_SHEET_NAME, RELEVAMIENTO_HEADERS);
+  sheet.appendRow([
+    new Date(),
+    (data.nombreCompleto || "").toString().trim(),
+    (data.provincia || "").toString().trim(),
+    (data.localidad || "").toString().trim(),
+    (data.espacioPolitico || "").toString().trim(),
+    Array.isArray(data.comisiones) ? data.comisiones.join("; ") : "",
+    (data.problematica || "").toString().trim(),
+    data.situacionEscala || "",
+    (data.situacionDetalle || "").toString().trim(),
   ]);
 }
 

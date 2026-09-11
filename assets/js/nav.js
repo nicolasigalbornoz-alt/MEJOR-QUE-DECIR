@@ -8,6 +8,7 @@
     { href: "encuesta.html", label: "Encuesta" },
     { href: "mapa.html", label: "Mapa federal" },
     { href: "sintesis.html", label: "Síntesis" },
+    { href: "relevamiento.html", label: "Relevamiento" },
     { href: "insumos.html", label: "Insumos" },
   ];
 

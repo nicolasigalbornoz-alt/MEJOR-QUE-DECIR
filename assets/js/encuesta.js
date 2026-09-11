@@ -7,6 +7,9 @@
  * nacimiento ni Instagram — ver apps-script/Code.gs).
  */
 (function () {
+  const K = window.MQD_FORMKIT;
+  const { el, text, fieldWrap, stepHeader, radioGroup, checkboxGroup, buildProvinciaSelect, validateRequired, notConfiguredMarkup, submitToAppsScript } = K;
+
   const PROBLEMAS = [
     "Falta de empleo / trabajo precario",
     "Falta de oportunidades educativas",
@@ -50,138 +53,13 @@
   const MAX_MULTI = 3;
 
   const state = {
-    nombre: "",
-    provincia: "",
-    localidad: "",
-    situacionEscala: null,
-    situacionTexto: "",
-    problemas: [],
-    necesidades: [],
-    visionEscala: null,
-    visionFrase: "",
-    edad: "",
-    participa: "",
+    formulario: "encuesta",
+    nombre: "", provincia: "", localidad: "",
+    situacionEscala: null, situacionTexto: "",
+    problemas: [], necesidades: [],
+    visionEscala: null, visionFrase: "",
+    edad: "", participa: "",
   };
-
-  function el(tag, attrs, children) {
-    const node = document.createElement(tag);
-    Object.entries(attrs || {}).forEach(([k, v]) => {
-      if (k === "class") node.className = v;
-      else if (k === "html") node.innerHTML = v;
-      else node.setAttribute(k, v);
-    });
-    (children || []).forEach((c) => node.appendChild(c));
-    return node;
-  }
-  function text(t) { return document.createTextNode(t); }
-
-  function fieldWrap(labelText, controlNode, opts) {
-    opts = opts || {};
-    const wrap = el("div", { class: "field", "data-field": opts.key || "" });
-    if (labelText) wrap.appendChild(el("label", { class: "field-label" }, [text(labelText)]));
-    wrap.appendChild(controlNode);
-    if (opts.hint) wrap.appendChild(el("p", { class: "muted small", style: "margin:6px 0 0;" }, [text(opts.hint)]));
-    wrap.appendChild(el("p", { class: "field-error" }, [text(opts.error || "Este campo es obligatorio.")]));
-    return wrap;
-  }
-
-  function stepHeader(num, title, hint) {
-    const frag = document.createDocumentFragment();
-    frag.appendChild(
-      el("div", { class: "survey-step__title" }, [
-        el("span", { class: "survey-step__num" }, [text(String(num))]),
-        text(title),
-      ])
-    );
-    if (hint) frag.appendChild(el("p", { class: "survey-step__hint muted small" }, [text(hint)]));
-    return frag;
-  }
-
-  function radioGroup(name, options, onPick) {
-    const list = el("div", { class: "option-list", role: "radiogroup" });
-    options.forEach((opt) => {
-      const value = typeof opt === "object" ? opt.value : opt;
-      const label = typeof opt === "object" ? opt.label : opt;
-      const input = el("input", { type: "radio", name });
-      const card = el(
-        "label",
-        { class: "option-card" },
-        [
-          input,
-          el("span", { class: "option-card__box round" }, [el("span", { class: "dot" })]),
-          el("span", { class: "option-card__label" }, [text(label)]),
-        ]
-      );
-      input.addEventListener("change", () => {
-        list.querySelectorAll(".option-card").forEach((c) => c.classList.remove("is-checked"));
-        card.classList.add("is-checked");
-        onPick(value);
-        list.closest(".field")?.classList.remove("has-error");
-      });
-      list.appendChild(card);
-    });
-    return list;
-  }
-
-  function checkboxGroup(name, options, arr, counterEl) {
-    const list = el("div", { class: "option-list", role: "group" });
-    function refreshCounter() {
-      if (counterEl) counterEl.textContent = `${arr.length}/${MAX_MULTI} elegidos`;
-      list.querySelectorAll(".option-card").forEach((card) => {
-        const isChecked = card.classList.contains("is-checked");
-        card.classList.toggle("is-disabled", !isChecked && arr.length >= MAX_MULTI);
-      });
-    }
-    options.forEach((label) => {
-      const input = el("input", { type: "checkbox", name });
-      const card = el(
-        "label",
-        { class: "option-card" },
-        [
-          input,
-          el("span", { class: "option-card__box square" }, [
-            (() => {
-              const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-              svg.setAttribute("viewBox", "0 0 24 24");
-              svg.setAttribute("fill", "none");
-              svg.setAttribute("stroke", "currentColor");
-              svg.setAttribute("stroke-width", "3");
-              svg.setAttribute("stroke-linecap", "round");
-              svg.innerHTML = '<path d="M20 6 9 17l-5-5"/>';
-              return svg;
-            })(),
-          ]),
-          el("span", { class: "option-card__label" }, [text(label)]),
-        ]
-      );
-      input.addEventListener("change", () => {
-        if (input.checked) {
-          if (arr.length >= MAX_MULTI) { input.checked = false; return; }
-          arr.push(label);
-          card.classList.add("is-checked");
-        } else {
-          const i = arr.indexOf(label);
-          if (i >= 0) arr.splice(i, 1);
-          card.classList.remove("is-checked");
-        }
-        refreshCounter();
-        list.closest(".field")?.classList.remove("has-error");
-      });
-      list.appendChild(card);
-    });
-    refreshCounter();
-    return list;
-  }
-
-  function buildProvinciaSelect() {
-    const wrap = el("div", { class: "select-wrap" });
-    const select = el("select", { class: "select", id: "fProvincia" }, [
-      el("option", { value: "" }, [text("Elegí tu provincia…")]),
-      ...window.MQD_PROVINCES.map((p) => el("option", { value: p.name }, [text(p.name)])),
-    ]);
-    wrap.appendChild(select);
-    return { wrap, select };
-  }
 
   // ---------- Autocompletar por nombre ----------
   function setupAutocomplete(input, onHit) {
@@ -268,7 +146,7 @@
     });
 
     // 2) De dónde sos
-    const { wrap: provinciaWrap, select: provinciaSelect } = buildProvinciaSelect();
+    const { wrap: provinciaWrap, select: provinciaSelect } = buildProvinciaSelect("f");
     provinciaSelect.addEventListener("change", () => {
       state.provincia = provinciaSelect.value;
       provinciaWrap.closest(".field")?.classList.remove("has-error");
@@ -295,7 +173,7 @@
     const s4 = el("div", { class: "card" });
     s4.appendChild(stepHeader(4, "Problemas de la juventud", `Elegí hasta ${MAX_MULTI} en tu lugar.`));
     const counter4 = el("div", { class: "field-counter" });
-    s4.appendChild(fieldWrap(null, checkboxGroup("problemas", PROBLEMAS, state.problemas, counter4), { key: "problemas", error: "Elegí al menos una opción." }));
+    s4.appendChild(fieldWrap(null, checkboxGroup("problemas", PROBLEMAS, state.problemas, { max: MAX_MULTI, counterEl: counter4 }), { key: "problemas", error: "Elegí al menos una opción." }));
     s4.querySelector(".field").appendChild(counter4);
     form.appendChild(s4);
 
@@ -303,7 +181,7 @@
     const s5 = el("div", { class: "card" });
     s5.appendChild(stepHeader(5, "¿Qué necesitan los y las jóvenes?", `Elegí hasta ${MAX_MULTI}.`));
     const counter5 = el("div", { class: "field-counter" });
-    s5.appendChild(fieldWrap(null, checkboxGroup("necesidades", NECESIDADES, state.necesidades, counter5), { key: "necesidades", error: "Elegí al menos una opción." }));
+    s5.appendChild(fieldWrap(null, checkboxGroup("necesidades", NECESIDADES, state.necesidades, { max: MAX_MULTI, counterEl: counter5 }), { key: "necesidades", error: "Elegí al menos una opción." }));
     s5.querySelector(".field").appendChild(counter5);
     form.appendChild(s5);
 
@@ -326,39 +204,25 @@
     // Enviar
     const submitBtn = el("button", { class: "btn btn-primary btn-block", type: "submit" }, [text("Enviar respuesta")]);
     const msg = el("div", { class: "form-msg" });
-    const submitWrap = el("div", { class: "survey-submit" }, [submitBtn, msg]);
-    form.appendChild(submitWrap);
+    form.appendChild(el("div", { class: "survey-submit" }, [submitBtn, msg]));
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
-      handleSubmit(form, submitBtn, msg);
+      handleSubmit(form, submitBtn, msg, counter4, counter5);
     });
 
     return form;
   }
 
-  function validate(form) {
+  async function handleSubmit(form, submitBtn, msg, counter4, counter5) {
+    msg.classList.remove("is-visible", "success", "error");
     const required = ["provincia", "localidad", "situacionEscala", "problemas", "necesidades", "visionEscala", "edad", "participa"];
-    let firstInvalid = null;
-    required.forEach((key) => {
-      const val = state[key];
-      const isEmpty = Array.isArray(val) ? val.length === 0 : val === null || val === "";
-      const fieldEl = form.querySelector(`[data-field="${key}"]`);
-      if (!fieldEl) return;
-      fieldEl.classList.toggle("has-error", isEmpty);
-      if (isEmpty && !firstInvalid) firstInvalid = fieldEl;
-    });
+    let firstInvalid = validateRequired(form, state, required);
     if (!state.nombre) {
       const fieldEl = form.querySelector('[data-field="nombre"]');
       fieldEl.classList.add("has-error");
-      if (!firstInvalid) firstInvalid = fieldEl;
+      firstInvalid = firstInvalid || fieldEl;
     }
-    return firstInvalid;
-  }
-
-  async function handleSubmit(form, submitBtn, msg) {
-    msg.classList.remove("is-visible", "success", "error");
-    const firstInvalid = validate(form);
     if (firstInvalid) {
       firstInvalid.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
@@ -374,19 +238,17 @@
     submitBtn.disabled = true;
     submitBtn.textContent = "Enviando…";
     try {
-      const res = await fetch(cfg.appsScriptUrl.trim(), {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(state),
-      });
-      let ok = res.ok;
-      try { const json = await res.json(); ok = ok && json.ok !== false; } catch (e) { /* respuesta no-JSON: asumimos éxito si HTTP fue ok */ }
-      if (!ok) throw new Error("La respuesta del servidor no fue exitosa.");
+      await submitToAppsScript(state);
 
       form.reset();
       form.querySelectorAll(".option-card.is-checked").forEach((c) => c.classList.remove("is-checked"));
-      Object.keys(state).forEach((k) => { state[k] = Array.isArray(state[k]) ? [] : (typeof state[k] === "number" ? null : ""); });
-      form.querySelectorAll(".field-counter").forEach((c) => { c.textContent = `0/${MAX_MULTI} elegidos`; });
+      state.nombre = ""; state.provincia = ""; state.localidad = "";
+      state.situacionEscala = null; state.situacionTexto = "";
+      state.problemas.length = 0; state.necesidades.length = 0;
+      state.visionEscala = null; state.visionFrase = "";
+      state.edad = ""; state.participa = "";
+      counter4.textContent = `0/${MAX_MULTI} elegidos`;
+      counter5.textContent = `0/${MAX_MULTI} elegidos`;
       msg.textContent = "¡Gracias! Tu respuesta ya se sumó al mapa y a la síntesis.";
       msg.classList.add("is-visible", "success");
       msg.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -405,11 +267,7 @@
     if (!container) return;
     const cfg = window.MQD_CONFIG;
     if (!cfg.appsScriptUrl || !cfg.appsScriptUrl.trim()) {
-      container.innerHTML = `
-        <div class="form-not-configured">
-          <p><b>Encuesta en preparación.</b><br />Falta conectar el backend (Google Apps Script) en <code>assets/js/config.js</code>.</p>
-          <p class="muted">Mirá <code>APPS_SCRIPT_SETUP.md</code> para conectarlo en unos minutos.</p>
-        </div>`;
+      container.innerHTML = notConfiguredMarkup("Encuesta en preparación.");
       return;
     }
     container.appendChild(buildForm());

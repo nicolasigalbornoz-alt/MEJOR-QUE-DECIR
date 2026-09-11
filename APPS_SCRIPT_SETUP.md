@@ -1,10 +1,17 @@
 # Cómo conectar el backend (Google Apps Script + tu planilla)
 
-La encuesta ya **no** usa un Google Form embebido: es un formulario propio
-(con el diseño del sitio) que escribe directo en tu Google Sheets, y que
-además reconoce el nombre de cada inscripto contra el padrón del
-encuentro para autocompletar provincia y ciudad. Todo esto corre con
-**Google Apps Script**, gratis, sin servidor propio.
+Los formularios del sitio (`encuesta.html` y `relevamiento.html`) ya **no**
+usan un Google Form embebido: son formularios propios (con el diseño del
+sitio) que escriben directo en tu Google Sheets, y que además reconocen el
+nombre de cada inscripto contra el padrón del encuentro para autocompletar
+provincia y ciudad. Todo esto corre con **Google Apps Script**, gratis, sin
+servidor propio — y **nunca** modifica la hoja del padrón: esa hoja solo se
+lee, para el autocompletado.
+
+Cada formulario guarda sus respuestas en su propia hoja, que se crea sola
+la primera vez que alguien responde: "Respuestas encuesta" para "Mejor que
+decir" y "Relevamiento territorial" para el Relevamiento Territorial y
+Formativo.
 
 Este instructivo lleva ~10 minutos y lo hace cualquier persona con acceso
 de edición a la planilla `Encuentro Nacional de Jóvenes FR - sábado 19 de
@@ -50,12 +57,26 @@ poder guardar respuestas sin problema).
 3. Configuración:
    - **Ejecutar como**: Yo (tu cuenta).
    - **Quién tiene acceso**: **Cualquier usuario**.
+
+   > ⚠️ **Ojo con esta opción**: en el desplegable hay dos parecidas —
+   > **"Cualquier usuario"** (pública, sin cuenta) y **"Cualquier persona
+   > que tenga una Cuenta de Google"** (pide iniciar sesión). Tenés que
+   > elegir la primera; si dejás la segunda, el sitio público va a quedar
+   > pidiendo login en vez de mostrar los datos.
 4. Tocá **Implementar**.
 5. La primera vez te va a pedir autorizar permisos: elegí tu cuenta →
    "Avanzado" → "Ir a [nombre del proyecto] (no seguro)" → Permitir. Es tu
    propio script, ese aviso es normal en Apps Script.
 6. Copiá la **URL de la aplicación web** que te da al final (termina en
    `/exec`).
+
+### Si ya tenías una implementación con el acceso mal puesto
+
+**Implementar → Administrar implementaciones** → ícono de lápiz ✏️ de tu
+implementación → arriba de todo cambiá **Versión** a **Nueva versión**
+(si no, los campos de abajo quedan bloqueados y no se guarda el cambio) →
+recién ahí cambiá **Quién tiene acceso** a **Cualquier usuario** →
+**Implementar**. La URL `/exec` no cambia.
 
 ## 5) Pegar la URL en el sitio
 
