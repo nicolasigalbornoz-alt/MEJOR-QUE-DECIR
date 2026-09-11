@@ -70,8 +70,8 @@
       <h3>${stat.name}</h3>
       <div class="stat-row" style="margin: 14px 0 18px;">
         <div class="stat"><b>${stat.count}</b><span>Encuestados</span></div>
-        <div class="stat"><b style="font-size:16px">${fmtAvg(stat.situacionSum, stat.situacionN, SITUACION_LABEL)}</b><span>Situación</span></div>
-        <div class="stat"><b style="font-size:16px">${fmtAvg(stat.visionSum, stat.visionN, VISION_LABEL)}</b><span>Visión país</span></div>
+        <div class="stat"><b class="stat-text">${fmtAvg(stat.situacionSum, stat.situacionN, SITUACION_LABEL)}</b><span>Situación</span></div>
+        <div class="stat"><b class="stat-text">${fmtAvg(stat.visionSum, stat.visionN, VISION_LABEL)}</b><span>Visión país</span></div>
       </div>
       ${stat.localidades.size ? `<p class="small muted">Localidades: ${Array.from(stat.localidades).slice(0, 8).join(" · ")}</p>` : ""}
       <h4 style="margin-top:18px;">Problemas más mencionados</h4>
