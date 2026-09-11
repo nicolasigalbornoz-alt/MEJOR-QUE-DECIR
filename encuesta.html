@@ -18,40 +18,24 @@
     <section class="hero wrap" style="padding-top:28px;">
       <span class="eyebrow">2 minutos · desde tu celular</span>
       <h1 style="font-size:clamp(24px,7vw,30px)">Contanos cómo se ve desde donde estás</h1>
-      <p>Tu respuesta se suma al mapa federal y al documento de síntesis en tiempo real. No hace falta registrarse.</p>
+      <p>Tu respuesta se suma al mapa federal y al documento de síntesis en tiempo real.</p>
     </section>
 
     <section class="section-tight wrap">
-      <div class="form-embed-wrap">
-        <iframe
-          id="formFrame"
-          src="about:blank"
-          title="Encuesta MEJOR QUE DECIR"
-          loading="lazy"
-        >Cargando…</iframe>
+      <div id="surveyForm">
+        <div class="card center" style="padding:40px 20px;">
+          <div class="skeleton" style="height:14px; width:60%; margin:0 auto 10px;"></div>
+          <div class="skeleton" style="height:14px; width:80%; margin:0 auto;"></div>
+        </div>
       </div>
+    </section>
 
-      <div class="form-fallback" id="formFallback" hidden>
-        <p>El formulario se abre mejor en una pestaña nueva.</p>
-        <a class="btn btn-primary" id="openFormBtn" href="#" target="_blank" rel="noopener">Abrir la encuesta</a>
-      </div>
-
-      <p class="muted center" style="margin-top:14px;">
-        ¿Preferís responder aparte? <a id="openFormLink" href="#" target="_blank" rel="noopener" style="color:var(--navy); font-weight:600;">Abrir el formulario en una pestaña nueva ↗</a>
+    <section class="section-tight wrap">
+      <p class="muted small">
+        Usamos tu nombre solo para reconocerte del padrón del encuentro y autocompletar tu
+        provincia/ciudad — nunca se publica en el mapa ni en la síntesis, que muestran datos
+        agregados por distrito.
       </p>
-    </section>
-
-    <section class="section-tight wrap">
-      <h2>Qué te vamos a preguntar</h2>
-      <div class="tag-row">
-        <span class="tag">De qué provincia y localidad sos</span>
-        <span class="tag">Situación de tu distrito</span>
-        <span class="tag">Problemas de la juventud</span>
-        <span class="tag">Qué necesitan los pibes</span>
-        <span class="tag">Visión del país</span>
-        <span class="tag">Edad y participación</span>
-      </div>
-      <p class="muted">Tus datos se usan solo para armar estadísticas agregadas por distrito. El nombre es opcional y nunca se publica.</p>
     </section>
   </main>
 
@@ -60,29 +44,6 @@
   <script src="assets/js/config.js"></script>
   <script src="assets/js/provinces.js"></script>
   <script src="assets/js/nav.js"></script>
-  <script>
-    (function () {
-      const cfg = window.MQD_CONFIG;
-      const frame = document.getElementById("formFrame");
-      const fallback = document.getElementById("formFallback");
-      const openBtn = document.getElementById("openFormBtn");
-      const openLink = document.getElementById("openFormLink");
-
-      openBtn.href = cfg.googleFormUrl;
-      openLink.href = cfg.googleFormUrl;
-
-      const notConfigured = !cfg.googleFormEmbedUrl || cfg.googleFormEmbedUrl.includes("REEMPLAZAR");
-      if (notConfigured) {
-        frame.closest(".form-embed-wrap").hidden = true;
-        fallback.hidden = false;
-        fallback.innerHTML = `
-          <p><b>Encuesta en preparación.</b><br />Falta conectar el Google Form real en <code>assets/js/config.js</code>.</p>
-          <p class="muted">Mirá <code>FORM_SETUP.md</code> para crear el formulario con las preguntas exactas.</p>
-        `;
-      } else {
-        frame.src = cfg.googleFormEmbedUrl;
-      }
-    })();
-  </script>
+  <script src="assets/js/encuesta.js"></script>
 </body>
 </html>

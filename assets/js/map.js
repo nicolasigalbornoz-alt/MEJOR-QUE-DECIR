@@ -136,7 +136,7 @@
     banner.classList.remove("skeleton");
     if (data.isDemo) {
       banner.classList.add("demo");
-      banner.innerHTML = `<span class="dot"></span> Mostrando datos de ejemplo — se reemplazan automáticamente al conectar el Google Form.`;
+      banner.innerHTML = `<span class="dot"></span> Mostrando datos de ejemplo — se reemplazan automáticamente al conectar el backend.`;
     } else if (data.empty) {
       banner.classList.add("demo");
       banner.innerHTML = `<span class="dot"></span> Todavía no llegaron respuestas del formulario.`;
