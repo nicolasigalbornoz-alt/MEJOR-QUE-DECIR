@@ -706,6 +706,26 @@ blockquote.testimonio footer {
 
 .field-counter { font-size: 12px; color: var(--text-muted); margin-top: 6px; text-align: right; }
 
+.linear-scale__row { display: flex; gap: 8px; }
+.linear-scale__opt {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  border-radius: var(--radius-s);
+  border: 1.5px solid var(--hairline);
+  background: var(--surface);
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.linear-scale__opt input { position: absolute; opacity: 0; pointer-events: none; }
+.linear-scale__opt.is-checked { border-color: var(--navy); background: var(--navy); color: #fff; }
+.linear-scale__labels { display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; color: var(--text-muted); }
+.linear-scale__labels span:last-child { text-align: right; }
+
 .autocomplete { position: relative; }
 .autocomplete__list {
   position: absolute;

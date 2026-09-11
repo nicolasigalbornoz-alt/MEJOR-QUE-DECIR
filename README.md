@@ -21,6 +21,7 @@ y convierte esas respuestas en un **mapa federal** interactivo y un
 | `encuesta.html` | Encuesta — formulario propio (no es un Google Form embebido). |
 | `mapa.html` | Mapa federal interactivo (Leaflet): provincias reales, tocable/pellizcable. |
 | `sintesis.html` | Documento de síntesis auto-generado, con botón de descarga/impresión. |
+| `relevamiento.html` | Relevamiento Territorial y Formativo — formulario propio de registro. |
 | `insumos.html` | Materiales para la militancia (carpeta de Drive + Centros de Estudios). |
 
 ## Cómo funciona (sin backend propio)
@@ -74,7 +75,9 @@ assets/
     provinces.js         Distritos (id/nombre/región) + centroide de CABA
     data.js               Carga y procesa las respuestas (Apps Script, CSV o demo)
     nav.js                Header/footer compartidos + menú móvil
-    encuesta.js           Formulario propio + autocompletado por nombre
+    formkit.js            Motor compartido de formularios (tarjetas de opción, escala lineal, etc.)
+    encuesta.js           Formulario "Mejor que decir" + autocompletado por nombre
+    relevamiento.js       Formulario "Relevamiento Territorial y Formativo"
     map.js                Mapa interactivo (Leaflet + GeoJSON + CABA como punto)
     sintesis.js            Lógica del documento de síntesis
     vendor/
