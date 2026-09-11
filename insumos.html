@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Insumos para la militancia — MEJOR QUE DECIR</title>
-  <meta name="description" content="Materiales y recursos para la militancia de Jóvenes FR: carpeta de insumos y la Red de Observatorios de Centros de Estudios." />
+  <meta name="description" content="Materiales y recursos para la militancia de Jóvenes FR: carpetas de Drive explorables y descargables, y la Red de Observatorios de Centros de Estudios." />
   <link rel="icon" href="favicon.ico" sizes="any" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/img/icon-192.png" />
   <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png" />
@@ -18,43 +18,26 @@
     <section class="hero wrap" style="padding-top:28px;">
       <span class="eyebrow">Para la militancia</span>
       <h1 style="font-size:clamp(24px,7vw,30px)">Insumos para la militancia</h1>
-      <p>Materiales, documentos y espacios de formación para llevar a cada distrito lo que salió de "Mejor que decir".</p>
+      <p>Materiales, documentos y espacios de formación para llevar a cada distrito lo que salió de "Mejor que decir". Tocá cualquier carpeta para explorarla y descargar lo que necesites.</p>
     </section>
 
     <section class="section-tight wrap">
-      <div class="card feature" style="align-items:center;">
-        <div class="feature__icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-        </div>
-        <div style="flex:1;">
-          <h3>Carpeta de insumos (Drive)</h3>
-          <p>Documentos, presentaciones y materiales de apoyo para trabajar en cada territorio.</p>
-        </div>
+      <div class="drive-list" id="driveList">
+        <!-- Los items se arman con JS a partir de DRIVE_ITEMS (abajo). -->
       </div>
-      <a class="btn btn-primary btn-block" style="margin-top:10px;"
-         href="https://drive.google.com/drive/folders/1oSWUlNIJ_-KK37DswKATFTkBelDQrtxk"
-         target="_blank" rel="noopener">
-        Abrir la carpeta en Drive ↗
-      </a>
-      <p class="muted small center" style="margin-top:8px;">
-        Si no podés entrar, pedile acceso a quien administra la carpeta.
-      </p>
     </section>
 
     <section class="section-tight wrap">
-      <div class="card feature" style="align-items:center;">
+      <a class="card feature drive-link-card" style="align-items:center;"
+         href="https://tadeobessega.github.io/index.html#inicio"
+         target="_blank" rel="noopener">
         <div class="feature__icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
         </div>
         <div style="flex:1;">
-          <h3>Centros de Estudios — Red de Observatorios</h3>
-          <p>El espacio de formación y análisis territorial de los Centros de Estudios.</p>
+          <h3>Centros de Estudios — Red de Observatorios ↗</h3>
+          <p>El espacio de formación y análisis territorial de los Centros de Estudios. Tocá para entrar.</p>
         </div>
-      </div>
-      <a class="btn btn-secondary btn-block" style="margin-top:10px;"
-         href="https://tadeobessega.github.io/index.html#inicio"
-         target="_blank" rel="noopener">
-        Visitar la página de Centros de Estudios ↗
       </a>
     </section>
 
@@ -71,5 +54,63 @@
 
   <script src="assets/js/config.js"></script>
   <script src="assets/js/nav.js"></script>
+  <script>
+    (function () {
+      const DRIVE_ITEMS = [
+        { type: "folder", id: "1hTHB7xF63uEbMaJDc7t3FwMx8uCQhbQb", label: "Carpeta de materiales 1" },
+        { type: "folder", id: "10igvvhVoazedUHcXbbs1bdN8fsyHrWAb", label: "Carpeta de materiales 2" },
+        { type: "folder", id: "1q_cVo9XgEAP8VQbbPbX2qco5b4z0DWBL", label: "Carpeta de materiales 3" },
+        { type: "folder", id: "1drVgjfFo13qoxbRM-n_R1fG_mCw9YSB1", label: "Carpeta de materiales 4" },
+        { type: "folder", id: "1ILdxELXcR_BFJV3IDsx2jgY_BtbWZcK2", label: "Carpeta de materiales 5" },
+        { type: "file", id: "1YXBih5u-n3wrw5pxlBUK4BbokKoi3xU-", label: "Documento" },
+        { type: "folder", id: "1i1IZiO6aeFfchscCw4jvIwWc3GO_bBaJ", label: "Carpeta de materiales 6" },
+      ];
+
+      const folderIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
+      const fileIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>';
+
+      const list = document.getElementById("driveList");
+      list.innerHTML = DRIVE_ITEMS.map((item, i) => {
+        const isFolder = item.type === "folder";
+        const openUrl = isFolder
+          ? `https://drive.google.com/drive/folders/${item.id}`
+          : `https://drive.google.com/file/d/${item.id}/view`;
+        const embedUrl = isFolder
+          ? `https://drive.google.com/embeddedfolderview?id=${item.id}#grid`
+          : `https://drive.google.com/file/d/${item.id}/preview`;
+        return `
+          <div class="card drive-item">
+            <div class="drive-item__head">
+              <a class="drive-item__title" href="${openUrl}" target="_blank" rel="noopener">
+                <span class="drive-item__icon">${isFolder ? folderIcon : fileIcon}</span>
+                ${item.label} ↗
+              </a>
+              <button type="button" class="drive-item__toggle" data-embed="${embedUrl}" data-index="${i}">
+                Ver contenido
+              </button>
+            </div>
+            <div class="drive-item__panel" id="panel-${i}" hidden>
+              <iframe class="drive-item__frame" loading="lazy" title="${item.label}"></iframe>
+            </div>
+          </div>`;
+      }).join("");
+
+      list.addEventListener("click", (e) => {
+        const btn = e.target.closest(".drive-item__toggle");
+        if (!btn) return;
+        const panel = document.getElementById("panel-" + btn.dataset.index);
+        const frame = panel.querySelector("iframe");
+        const isOpen = !panel.hidden;
+        if (isOpen) {
+          panel.hidden = true;
+          btn.textContent = "Ver contenido";
+        } else {
+          if (!frame.src) frame.src = btn.dataset.embed;
+          panel.hidden = false;
+          btn.textContent = "Ocultar";
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
