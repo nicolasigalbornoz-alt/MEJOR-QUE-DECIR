@@ -13,6 +13,14 @@
  *  3) Expone las respuestas de la encuesta como JSON para que el sitio
  *     arme el mapa federal y la síntesis.
  *
+ * Rendimiento: tanto el padrón como las respuestas se guardan un rato en
+ * CacheService (memoria compartida entre TODAS las visitas al sitio, no
+ * por usuario) para no releer la planilla entera en cada pedido — con
+ * mucha gente mirando el mapa/síntesis a la vez el día del encuentro,
+ * releer la hoja completa en cada request es lo que hace sentir lento
+ * al sitio. Cuando entra una respuesta nueva, se invalida el cache de
+ * respuestas al toque para que no tarde en aparecer.
+ *
  * Instalación: ver /APPS_SCRIPT_SETUP.md en el repo.
  */
 
@@ -45,6 +53,16 @@ const RESPUESTA_HEADERS = [
   "Visión (frase)",
 ];
 
+// Cuánto se guarda cada cosa en CacheService antes de releer la planilla.
+// Las respuestas se invalidan solas apenas entra una nueva (ver
+// appendResponse), así que este número es más un tope de seguridad que
+// un retraso real. El padrón no cambia durante el evento, así que puede
+// quedarse cacheado más tiempo sin problema.
+const RESPONSES_CACHE_SECONDS = 30;
+const PADRON_CACHE_SECONDS = 1800; // 30 minutos
+const RESPONSES_CACHE_KEY = "mqd_responses_json_v2";
+const PADRON_CACHE_KEY = "mqd_padron_json_v2";
+
 function doGet(e) {
   const action = (e.parameter.action || "").toLowerCase();
   if (action === "search") return handleSearch(e);
@@ -56,7 +74,8 @@ function doGet(e) {
 // Diagnóstico temporal: a qué planilla está atado el script y qué
 // pestañas ve, para depurar el autocompletado si no encuentra a nadie.
 // Es de solo lectura, no expone filas del padrón, solo nombres de hoja
-// y encabezados. Se puede borrar una vez que todo funcione.
+// y encabezados. Se puede borrar una vez que todo funcione. A propósito
+// no usa cache: siempre lee la planilla en vivo para diagnosticar.
 function handleDebug() {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -91,34 +110,60 @@ function doPost(e) {
 
 // ---------- Autocompletar por nombre (solo nombre + provincia + ciudad) ----------
 
-function handleSearch(e) {
-  const q = normalizeText(e.parameter.q || "");
-  if (q.length < 2) return jsonOut([]);
+// Padrón reducido a los 3 datos que se muestran, guardado en cache: así
+// cada letra que alguien tipea en el buscador no vuelve a leer la hoja
+// entera, solo filtra el array ya cacheado.
+function getPadron() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get(PADRON_CACHE_KEY);
+  if (cached) return JSON.parse(cached);
 
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(PADRON_SHEET_NAME);
-  if (!sheet) return jsonOut([]);
+  if (!sheet) return { found: false, rows: [] };
 
   const values = sheet.getDataRange().getValues();
-  if (values.length < 2) return jsonOut([]);
+  if (values.length < 2) return { found: false, rows: [] };
   const headers = values[0];
   const iNombre = headerIndex(headers, PADRON_COLS.nombre);
   const iProv = headerIndex(headers, PADRON_COLS.provincia);
   const iCiudad = headerIndex(headers, PADRON_COLS.ciudad);
-  if (iNombre === -1) return jsonOut([]);
+  if (iNombre === -1) return { found: false, rows: [] };
 
-  const seen = {};
-  const out = [];
-  for (let r = 1; r < values.length && out.length < 8; r++) {
+  const rows = [];
+  for (let r = 1; r < values.length; r++) {
     const nombre = (values[r][iNombre] || "").toString().trim();
     if (!nombre) continue;
-    const key = normalizeText(nombre);
-    if (seen[key] || key.indexOf(q) === -1) continue;
-    seen[key] = true;
-    out.push({
+    rows.push({
       nombre: nombre,
       provincia: iProv === -1 ? "" : (values[r][iProv] || "").toString().trim(),
       ciudad: iCiudad === -1 ? "" : (values[r][iCiudad] || "").toString().trim(),
     });
+  }
+  const result = { found: true, rows: rows };
+  try {
+    cache.put(PADRON_CACHE_KEY, JSON.stringify(result), PADRON_CACHE_SECONDS);
+  } catch (err) {
+    // Padrón muy grande para cachear (CacheService tiene un tope de
+    // 100KB por clave): seguimos sin cache en vez de romper el pedido.
+  }
+  return result;
+}
+
+function handleSearch(e) {
+  const q = normalizeText(e.parameter.q || "");
+  if (q.length < 2) return jsonOut([]);
+
+  const padron = getPadron();
+  if (!padron.found) return jsonOut([]);
+
+  const seen = {};
+  const out = [];
+  for (let i = 0; i < padron.rows.length && out.length < 8; i++) {
+    const row = padron.rows[i];
+    const key = normalizeText(row.nombre);
+    if (seen[key] || key.indexOf(q) === -1) continue;
+    seen[key] = true;
+    out.push(row);
   }
   return jsonOut(out);
 }
@@ -174,11 +219,18 @@ function appendResponse(data) {
     data.visionEscala != null ? data.visionEscala : "",
     (data.visionFrase || "").toString().trim(),
   ]);
+  // Que la respuesta recién guardada aparezca ya en el mapa/síntesis, sin
+  // esperar a que venza el cache de ?action=responses.
+  CacheService.getScriptCache().remove(RESPONSES_CACHE_KEY);
 }
 
 // ---------- Exponer respuestas para el mapa / síntesis ----------
 
 function handleResponses() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get(RESPONSES_CACHE_KEY);
+  if (cached) return jsonOutRaw(cached);
+
   const sheet = getOrCreateResponseSheet();
   const values = sheet.getDataRange().getValues();
   const headers = values.length ? values[0] : RESPUESTA_HEADERS;
@@ -187,11 +239,22 @@ function handleResponses() {
   const cleanRows = rows.map((r) =>
     r.map((c) => (c instanceof Date ? c.toISOString() : c))
   );
-  return jsonOut({ headers: headers, rows: cleanRows });
+  const json = JSON.stringify({ headers: headers, rows: cleanRows });
+  try {
+    cache.put(RESPONSES_CACHE_KEY, json, RESPONSES_CACHE_SECONDS);
+  } catch (err) {
+    // Demasiadas respuestas para cachear (>100KB): seguimos sin cache,
+    // el pedido igual se responde, solo que sin acelerar el siguiente.
+  }
+  return jsonOutRaw(json);
 }
 
 function jsonOut(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(
+  return jsonOutRaw(JSON.stringify(obj));
+}
+
+function jsonOutRaw(jsonString) {
+  return ContentService.createTextOutput(jsonString).setMimeType(
     ContentService.MimeType.JSON
   );
 }
