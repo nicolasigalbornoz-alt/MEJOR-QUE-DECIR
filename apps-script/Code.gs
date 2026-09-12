@@ -34,8 +34,8 @@ const RESPUESTA_HEADERS = [
   "Nombre",
   "Provincia",
   "Localidad",
-  "Espacio político",
-  "Participación en espacios de militancia",
+  "Participación en espacio político / militancia",
+  "Nombre de la agrupación",
   "Situación distrito (1-5)",
   "Situación / problemática (texto)",
   "Problemas juventud",
@@ -43,7 +43,6 @@ const RESPUESTA_HEADERS = [
   "Comisión de interés",
   "Visión país (-2 a 2)",
   "Visión (frase)",
-  "Edad",
 ];
 
 function doGet(e) {
@@ -165,8 +164,8 @@ function appendResponse(data) {
     (data.nombre || "").toString().trim(),
     (data.provincia || "").toString().trim(),
     (data.localidad || "").toString().trim(),
-    (data.espacioPolitico || "").toString().trim(),
     (data.participa || "").toString().trim(),
+    (data.agrupacion || "").toString().trim(),
     data.situacionEscala || "",
     (data.situacionTexto || "").toString().trim(),
     Array.isArray(data.problemas) ? data.problemas.join("; ") : "",
@@ -174,7 +173,6 @@ function appendResponse(data) {
     Array.isArray(data.comisiones) ? data.comisiones.join("; ") : "",
     data.visionEscala != null ? data.visionEscala : "",
     (data.visionFrase || "").toString().trim(),
-    (data.edad || "").toString().trim(),
   ]);
 }
 

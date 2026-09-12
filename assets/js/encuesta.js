@@ -25,6 +25,7 @@
     "Transporte público deficiente",
     "Falta de acceso a tecnología / conectividad",
     "Falta de arraigo (los jóvenes se van del distrito)",
+    "Otro...",
   ];
   const NECESIDADES = [
     "Más oportunidades laborales",
@@ -39,14 +40,12 @@
     "Programas de prevención de adicciones",
   ];
   const COMISIONES = [
-    "Organización y Política Territorial",
-    "Obras Públicas, Hábitat y Transporte",
-    "Ambiente y Desarrollo Sustentable",
-    "Economía, Hacienda y Producción",
-    "Salud y Acción Social",
-    "Educación, Ciencia y Cultura",
-    "Juventud",
-    "Seguridad y Derechos Humanos",
+    "Trabajo y producción",
+    "Modelo de desarrollo y federalismo",
+    "Soberanía, defensa e integración territorial",
+    "Desafíos éticos y políticos de la IA: una mirada desde el sur global",
+    "Seguridad",
+    "Militancia territorial",
     "Otra...",
   ];
   const SITUACION = [
@@ -63,18 +62,16 @@
     { value: 1, label: "Optimista" },
     { value: 2, label: "Muy optimista" },
   ];
-  const EDAD = ["Menos de 18", "18 a 24", "25 a 30", "Más de 30"];
   const PARTICIPA = ["Sí", "No", "Todavía no, pero me gustaría"];
   const MAX_MULTI = 3;
 
   const state = {
     nombre: "", provincia: "", localidad: "",
-    espacioPolitico: "", participa: "",
+    participa: "", agrupacion: "",
     situacionEscala: null, situacionTexto: "",
-    problemas: [], necesidades: [],
+    problemas: [], problemaOtro: "", necesidades: [],
     comisiones: [], comisionOtra: "",
     visionEscala: null, visionFrase: "",
-    edad: "",
   };
 
   // ---------- Autocompletar por nombre ----------
@@ -176,13 +173,24 @@
     s2.appendChild(fieldWrap("Localidad / ciudad / barrio", localidadInput, { key: "localidad" }));
     form.appendChild(s2);
 
-    // 3) Tu espacio
-    const espacioInput = el("input", { class: "input", type: "text", id: "fEspacio", placeholder: "Espacio, agrupación o referencia política" });
-    espacioInput.addEventListener("input", () => { state.espacioPolitico = espacioInput.value.trim(); });
+    // 3) Tu espacio político
+    const agrupacionInput = el("input", { class: "input", type: "text", id: "fAgrupacion", placeholder: "Nombre de tu espacio o agrupación" });
+    agrupacionInput.addEventListener("input", () => { state.agrupacion = agrupacionInput.value.trim(); });
+    const fAgrupacion = fieldWrap("¿Cómo se llama tu espacio o agrupación?", agrupacionInput, { key: "agrupacion" });
+    fAgrupacion.hidden = true;
     const s3 = el("div", { class: "card" });
-    s3.appendChild(stepHeader(3, "Tu espacio"));
-    s3.appendChild(fieldWrap("Espacio político", espacioInput, { key: "espacioPolitico" }));
-    s3.appendChild(fieldWrap("¿Participás en algún espacio de militancia?", radioGroup("participa", PARTICIPA, (v) => { state.participa = v; }), { key: "participa" }));
+    s3.appendChild(stepHeader(3, "Tu espacio político"));
+    s3.appendChild(fieldWrap("¿Participás en algún espacio político o de militancia?", radioGroup("participa", PARTICIPA, (v) => {
+      state.participa = v;
+      const afirmativo = v === "Sí";
+      fAgrupacion.hidden = !afirmativo;
+      if (!afirmativo) {
+        state.agrupacion = "";
+        agrupacionInput.value = "";
+        fAgrupacion.classList.remove("has-error");
+      }
+    }), { key: "participa" }));
+    s3.appendChild(fAgrupacion);
     form.appendChild(s3);
 
     // 4) Situación del distrito
@@ -195,11 +203,19 @@
     form.appendChild(s4);
 
     // 5) Problemas
+    const problemaOtroInput = el("input", { class: "input", type: "text", placeholder: "Contanos cuál", style: "margin-top:8px; display:none;" });
+    problemaOtroInput.addEventListener("input", () => { state.problemaOtro = problemaOtroInput.value.trim(); });
     const s5 = el("div", { class: "card" });
     s5.appendChild(stepHeader(5, "Problemas de la juventud", `Elegí hasta ${MAX_MULTI} en tu lugar.`));
     const counter5 = el("div", { class: "field-counter" });
-    s5.appendChild(fieldWrap(null, checkboxGroup("problemas", PROBLEMAS, state.problemas, { max: MAX_MULTI, counterEl: counter5 }), { key: "problemas", error: "Elegí al menos una opción." }));
-    s5.querySelector(".field").appendChild(counter5);
+    const problemasGroup = checkboxGroup("problemas", PROBLEMAS, state.problemas, {
+      max: MAX_MULTI, counterEl: counter5,
+      onOther: (checked) => { problemaOtroInput.style.display = checked ? "block" : "none"; if (!checked) { problemaOtroInput.value = ""; state.problemaOtro = ""; } },
+    });
+    const f5 = fieldWrap(null, problemasGroup, { key: "problemas", error: "Elegí al menos una opción." });
+    f5.appendChild(counter5);
+    f5.appendChild(problemaOtroInput);
+    s5.appendChild(f5);
     form.appendChild(s5);
 
     // 6) Necesidades
@@ -232,12 +248,6 @@
     s8.appendChild(fieldWrap("¿Qué país te gustaría construir? (opcional)", visionFrase));
     form.appendChild(s8);
 
-    // 9) Sobre vos
-    const s9 = el("div", { class: "card" });
-    s9.appendChild(stepHeader(9, "Un poco más sobre vos"));
-    s9.appendChild(fieldWrap("Edad", radioGroup("edad", EDAD, (v) => { state.edad = v; }), { key: "edad" }));
-    form.appendChild(s9);
-
     // Enviar
     const submitBtn = el("button", { class: "btn btn-primary btn-block", type: "submit" }, [text("Enviar respuesta")]);
     const msg = el("div", { class: "form-msg" });
@@ -245,15 +255,16 @@
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
-      handleSubmit(form, submitBtn, msg, counter5, counter6, otraInput);
+      handleSubmit(form, submitBtn, msg, counter5, counter6, otraInput, problemaOtroInput, fAgrupacion);
     });
 
     return form;
   }
 
-  async function handleSubmit(form, submitBtn, msg, counter5, counter6, otraInput) {
+  async function handleSubmit(form, submitBtn, msg, counter5, counter6, otraInput, problemaOtroInput, fAgrupacion) {
     msg.classList.remove("is-visible", "success", "error");
-    const required = ["provincia", "localidad", "espacioPolitico", "participa", "situacionEscala", "situacionTexto", "problemas", "necesidades", "comisiones", "visionEscala", "edad"];
+    const required = ["provincia", "localidad", "participa", "situacionEscala", "situacionTexto", "problemas", "necesidades", "comisiones", "visionEscala"];
+    if (state.participa === "Sí") required.push("agrupacion");
     let firstInvalid = validateRequired(form, state, required);
     if (!state.nombre) {
       const fieldEl = form.querySelector('[data-field="nombre"]');
@@ -272,7 +283,11 @@
       return;
     }
 
-    const payload = { ...state, comisiones: state.comisiones.map((c) => (/^otra/i.test(c) && state.comisionOtra ? `Otra: ${state.comisionOtra}` : c)) };
+    const payload = {
+      ...state,
+      problemas: state.problemas.map((p) => (/^otr[oa]/i.test(p) && state.problemaOtro ? `Otro: ${state.problemaOtro}` : p)),
+      comisiones: state.comisiones.map((c) => (/^otr[oa]/i.test(c) && state.comisionOtra ? `Otra: ${state.comisionOtra}` : c)),
+    };
 
     submitBtn.disabled = true;
     submitBtn.textContent = "Enviando…";
@@ -282,13 +297,14 @@
       form.reset();
       form.querySelectorAll(".option-card.is-checked").forEach((c) => c.classList.remove("is-checked"));
       otraInput.style.display = "none";
+      problemaOtroInput.style.display = "none";
+      fAgrupacion.hidden = true;
       state.nombre = ""; state.provincia = ""; state.localidad = "";
-      state.espacioPolitico = ""; state.participa = "";
+      state.participa = ""; state.agrupacion = "";
       state.situacionEscala = null; state.situacionTexto = "";
-      state.problemas.length = 0; state.necesidades.length = 0;
+      state.problemas.length = 0; state.problemaOtro = ""; state.necesidades.length = 0;
       state.comisiones.length = 0; state.comisionOtra = "";
       state.visionEscala = null; state.visionFrase = "";
-      state.edad = "";
       counter5.textContent = `0/${MAX_MULTI} elegidos`;
       counter6.textContent = `0/${MAX_MULTI} elegidos`;
       msg.textContent = "¡Gracias! Tu respuesta ya se sumó al mapa y a la síntesis.";
@@ -312,6 +328,7 @@
       container.innerHTML = notConfiguredMarkup("Encuesta en preparación.");
       return;
     }
+    container.innerHTML = ""; // saca el placeholder/skeleton de carga
     container.appendChild(buildForm());
   }
 

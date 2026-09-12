@@ -47,7 +47,6 @@
     const kNecesidades = findKey(headers, ["que necesitan", "necesitan los", "necesidades"]);
     const kVisionEscala = findKey(headers, ["tan optimista"]);
     const kVisionFrase = findKey(headers, ["pais te gustaria", "pais te gustaria construir"]);
-    const kEdad = findKey(headers, ["cual es tu edad", "tu edad"]);
     const kParticipa = findKey(headers, ["participas en algun espacio", "espacio de militancia"]);
     const kNombre = findKey(headers, ["nombre"]);
 
@@ -71,7 +70,6 @@
         necesidades: splitMulti(get(kNecesidades)),
         visionEscala: ESCALA_VISION[norm(get(kVisionEscala))] ?? null,
         visionFrase: get(kVisionFrase),
-        edad: get(kEdad),
         participa: get(kParticipa),
         nombre: get(kNombre),
       });
@@ -86,10 +84,11 @@
   function parseAppsScriptRows(json) {
     // Posiciones fijas — tienen que coincidir con RESPUESTA_HEADERS y
     // appendResponse() en apps-script/Code.gs:
-    // 0 Marca temporal, 1 Nombre, 2 Provincia, 3 Localidad, 4 Espacio
-    // político, 5 Participación, 6 Situación (1-5), 7 Situación/problemática
-    // (texto), 8 Problemas, 9 Necesidades, 10 Comisión de interés,
-    // 11 Visión país (-2 a 2), 12 Visión (frase), 13 Edad.
+    // 0 Marca temporal, 1 Nombre, 2 Provincia, 3 Localidad, 4 Participación
+    // en espacio político/militancia, 5 Nombre de la agrupación,
+    // 6 Situación (1-5), 7 Situación/problemática (texto), 8 Problemas,
+    // 9 Necesidades, 10 Comisión de interés, 11 Visión país (-2 a 2),
+    // 12 Visión (frase).
     const rows = Array.isArray(json && json.rows) ? json.rows : [];
     const out = [];
     for (const r of rows) {
@@ -104,8 +103,8 @@
         provinceId,
         provinciaRaw,
         localidad: (r[3] || "").toString().trim(),
-        espacioPolitico: (r[4] || "").toString().trim(),
-        participa: (r[5] || "").toString().trim(),
+        participa: (r[4] || "").toString().trim(),
+        agrupacion: (r[5] || "").toString().trim(),
         situacionEscala: Number.isFinite(situ) && r[6] !== "" ? situ : null,
         situacionTexto: (r[7] || "").toString().trim(),
         problemas: splitMulti((r[8] || "").toString(), ";"),
@@ -113,7 +112,6 @@
         comisiones: splitMulti((r[10] || "").toString(), ";"),
         visionEscala: Number.isFinite(vision) && r[11] !== "" ? vision : null,
         visionFrase: (r[12] || "").toString().trim(),
-        edad: (r[13] || "").toString().trim(),
         nombre: (r[1] || "").toString().trim(),
       });
     }
@@ -136,7 +134,7 @@
         localidades: new Set(), quotes: [],
       };
     }
-    const nacProblemas = {}, nacNecesidades = {}, nacEdad = {}, nacParticipa = {};
+    const nacProblemas = {}, nacNecesidades = {}, nacParticipa = {};
     const nacVision = { "-2": 0, "-1": 0, "0": 0, "1": 0, "2": 0 };
     const nacSituacion = { "1": 0, "2": 0, "3": 0, "4": 0, "5": 0 };
 
@@ -155,7 +153,6 @@
       }
       row.problemas.forEach((p) => { bump(b.problemas, p); bump(nacProblemas, p); });
       row.necesidades.forEach((n) => { bump(b.necesidades, n); bump(nacNecesidades, n); });
-      bump(nacEdad, row.edad);
       bump(nacParticipa, row.participa);
       const quote = row.situacionTexto || row.visionFrase;
       if (quote && quote.length > 3 && b.quotes.length < 8) {
@@ -171,7 +168,7 @@
       totalProvinces: provincesWithData.length,
       totalLocalidades: new Set(rows.map((r) => norm(r.localidad)).filter(Boolean)).size,
       byProvince, maxCount,
-      nacProblemas, nacNecesidades, nacEdad, nacParticipa, nacVision, nacSituacion,
+      nacProblemas, nacNecesidades, nacParticipa, nacVision, nacSituacion,
       rows,
     };
   }
