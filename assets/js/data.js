@@ -109,7 +109,7 @@
         situacionTexto: (r[7] || "").toString().trim(),
         problemas: splitMulti((r[8] || "").toString(), ";"),
         necesidades: splitMulti((r[9] || "").toString(), ";"),
-        comisiones: splitMulti((r[10] || "").toString(), ";"),
+        comision: (r[10] || "").toString().trim(),
         visionEscala: Number.isFinite(vision) && r[11] !== "" ? vision : null,
         visionFrase: (r[12] || "").toString().trim(),
         nombre: (r[1] || "").toString().trim(),

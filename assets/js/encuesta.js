@@ -70,7 +70,7 @@
     participa: "", agrupacion: "",
     situacionEscala: null, situacionTexto: "",
     problemas: [], problemaOtro: "", necesidades: [],
-    comisiones: [], comisionOtra: "",
+    comision: "", comisionOtra: "",
     visionEscala: null, visionFrase: "",
   };
 
@@ -230,11 +230,14 @@
     const otraInput = el("input", { class: "input", type: "text", placeholder: "Contanos cuál", style: "margin-top:8px; display:none;" });
     otraInput.addEventListener("input", () => { state.comisionOtra = otraInput.value.trim(); });
     const s7 = el("div", { class: "card" });
-    s7.appendChild(stepHeader(7, "Comisión de interés", "Elegí una o más."));
-    const comisionesGroup = checkboxGroup("comisiones", COMISIONES, state.comisiones, {
-      onOther: (checked) => { otraInput.style.display = checked ? "block" : "none"; if (!checked) { otraInput.value = ""; state.comisionOtra = ""; } },
+    s7.appendChild(stepHeader(7, "Comisión de interés", "Elegí una."));
+    const comisionGroup = radioGroup("comision", COMISIONES, (v) => {
+      state.comision = v;
+      const esOtra = /^otr[oa]/i.test(v);
+      otraInput.style.display = esOtra ? "block" : "none";
+      if (!esOtra) { otraInput.value = ""; state.comisionOtra = ""; }
     });
-    const f7 = fieldWrap(null, comisionesGroup, { key: "comisiones", error: "Elegí al menos una comisión." });
+    const f7 = fieldWrap(null, comisionGroup, { key: "comision", error: "Elegí una comisión." });
     f7.appendChild(otraInput);
     s7.appendChild(f7);
     form.appendChild(s7);
@@ -263,7 +266,7 @@
 
   async function handleSubmit(form, submitBtn, msg, counter5, counter6, otraInput, problemaOtroInput, fAgrupacion) {
     msg.classList.remove("is-visible", "success", "error");
-    const required = ["provincia", "localidad", "participa", "situacionEscala", "situacionTexto", "problemas", "necesidades", "comisiones", "visionEscala"];
+    const required = ["provincia", "localidad", "participa", "situacionEscala", "situacionTexto", "problemas", "necesidades", "comision", "visionEscala"];
     if (state.participa === "Sí") required.push("agrupacion");
     let firstInvalid = validateRequired(form, state, required);
     if (!state.nombre) {
@@ -286,7 +289,7 @@
     const payload = {
       ...state,
       problemas: state.problemas.map((p) => (/^otr[oa]/i.test(p) && state.problemaOtro ? `Otro: ${state.problemaOtro}` : p)),
-      comisiones: state.comisiones.map((c) => (/^otr[oa]/i.test(c) && state.comisionOtra ? `Otra: ${state.comisionOtra}` : c)),
+      comision: /^otr[oa]/i.test(state.comision) && state.comisionOtra ? `Otra: ${state.comisionOtra}` : state.comision,
     };
 
     submitBtn.disabled = true;
@@ -303,7 +306,7 @@
       state.participa = ""; state.agrupacion = "";
       state.situacionEscala = null; state.situacionTexto = "";
       state.problemas.length = 0; state.problemaOtro = ""; state.necesidades.length = 0;
-      state.comisiones.length = 0; state.comisionOtra = "";
+      state.comision = ""; state.comisionOtra = "";
       state.visionEscala = null; state.visionFrase = "";
       counter5.textContent = `0/${MAX_MULTI} elegidos`;
       counter6.textContent = `0/${MAX_MULTI} elegidos`;

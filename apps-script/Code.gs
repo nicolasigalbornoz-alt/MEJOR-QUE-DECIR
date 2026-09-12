@@ -215,7 +215,7 @@ function appendResponse(data) {
     (data.situacionTexto || "").toString().trim(),
     Array.isArray(data.problemas) ? data.problemas.join("; ") : "",
     Array.isArray(data.necesidades) ? data.necesidades.join("; ") : "",
-    Array.isArray(data.comisiones) ? data.comisiones.join("; ") : "",
+    (data.comision || "").toString().trim(),
     data.visionEscala != null ? data.visionEscala : "",
     (data.visionFrase || "").toString().trim(),
   ]);
