@@ -190,19 +190,73 @@
     return res.json();
   }
 
+  // ---------- Velocidad: cache entre páginas + timeout al backend ----------
+  // Google Apps Script puede tardar (a veces bastante) en responder,
+  // sobre todo con mucha gente consultando el mapa/síntesis a la vez el
+  // día del encuentro. Dos cosas para que el sitio se sienta rápido de
+  // verdad en vez de dejar a la persona mirando el esqueleto de carga:
+  //  1) Se cachean las filas ya parseadas en sessionStorage un rato corto,
+  //     así navegar entre inicio → mapa → síntesis no vuelve a pedir lo
+  //     mismo al backend en cada página.
+  //  2) El pedido al backend corre contra un timeout: si tarda más de la
+  //     cuenta, se muestra la demo (o el cache) al toque, y el pedido
+  //     real sigue en curso igual — si termina llegando, se cachea para
+  //     la próxima página (aunque ya no cambie lo que se ve ahora).
+  const ROWS_CACHE_KEY = "mqd_rows_cache_v1";
+  const ROWS_CACHE_TTL_MS = 25000; // 25s: alcanza para navegar sin re-pedir, corto para seguir "en vivo"
+  const FETCH_TIMEOUT_MS = 4000;
+
+  function readRowsCache() {
+    try {
+      const raw = sessionStorage.getItem(ROWS_CACHE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed.ts !== "number" || !Array.isArray(parsed.rows)) return null;
+      if (Date.now() - parsed.ts > ROWS_CACHE_TTL_MS) return null;
+      return parsed.rows;
+    } catch (e) {
+      return null; // modo privado, cuota llena, etc. — seguimos sin cache
+    }
+  }
+
+  function writeRowsCache(rows) {
+    try {
+      sessionStorage.setItem(ROWS_CACHE_KEY, JSON.stringify({ ts: Date.now(), rows }));
+    } catch (e) {
+      // no es crítico: el sitio funciona igual, solo sin acelerar la próxima página
+    }
+  }
+
+  function withTimeout(promise, ms) {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("timeout de " + ms + "ms")), ms);
+      promise.then(
+        (v) => { clearTimeout(timer); resolve(v); },
+        (e) => { clearTimeout(timer); reject(e); }
+      );
+    });
+  }
+
   window.MQD_DATA = {
     async load() {
       const cfg = window.MQD_CONFIG;
       let rows = null;
       let isDemo = false;
 
-      if (cfg.appsScriptUrl && cfg.appsScriptUrl.trim()) {
+      const cachedRows = readRowsCache();
+      if (cachedRows) {
+        rows = cachedRows;
+      } else if (cfg.appsScriptUrl && cfg.appsScriptUrl.trim()) {
         try {
           const url = cfg.appsScriptUrl.trim().replace(/\/$/, "") + "?action=responses";
-          const json = await fetchJson(url);
-          rows = parseAppsScriptRows(json);
+          const realFetch = fetchJson(url).then((json) => {
+            const parsed = parseAppsScriptRows(json);
+            writeRowsCache(parsed); // por si el timeout ganó la carrera, igual queda listo para la próxima página
+            return parsed;
+          });
+          rows = await withTimeout(realFetch, FETCH_TIMEOUT_MS);
         } catch (e) {
-          console.warn("No se pudo leer appsScriptUrl, se prueba csvUrl / demo.", e);
+          console.warn("No se pudo leer appsScriptUrl a tiempo, se prueba csvUrl / demo.", e);
         }
       }
 
