@@ -163,11 +163,6 @@
     renderDiverging(document.getElementById("visionDiverging"), data.nacVision, data.totalResponses);
     renderRegions(document.getElementById("regionsList"), data);
 
-    const edadEntries = window.MQD_sortedEntries(data.nacEdad);
-    document.getElementById("edadList").innerHTML = edadEntries.length
-      ? `<div class="tag-row">${edadEntries.map(([k, v]) => `<span class="tag">${k}: ${v}</span>`).join("")}</div>`
-      : `<p class="empty-note">Sin datos.</p>`;
-
     const participaEntries = window.MQD_sortedEntries(data.nacParticipa);
     document.getElementById("participaList").innerHTML = participaEntries.length
       ? `<div class="tag-row">${participaEntries.map(([k, v]) => `<span class="tag">${k}: ${v}</span>`).join("")}</div>`

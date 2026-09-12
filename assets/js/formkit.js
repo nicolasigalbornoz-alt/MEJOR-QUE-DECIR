@@ -91,7 +91,7 @@ window.MQD_FORMKIT = (function () {
     }
 
     options.forEach((label) => {
-      const isOther = onOther && /^otra/i.test(label);
+      const isOther = onOther && /^otr[oa]/i.test(label); // matchea "Otra..." y "Otro..."
       const input = el("input", { type: "checkbox", name });
       const card = el("label", { class: "option-card" }, [
         input,
