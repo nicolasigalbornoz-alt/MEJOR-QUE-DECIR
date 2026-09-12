@@ -7,6 +7,10 @@
  */
 (function () {
   const RAMP_VARS = ["--seq-150", "--seq-250", "--seq-350", "--seq-450", "--seq-550", "--seq-650"];
+  // Provincias sin ninguna respuesta: el tono más pálido de la misma escala
+  // (no el gris de fondo del mapa) para que el distrito siga viéndose como
+  // parte del mapa en vez de desaparecer contra el fondo.
+  const EMPTY_VAR = "--seq-100";
   const SITUACION_LABEL = { 1: "Muy mala", 2: "Mala", 3: "Regular", 4: "Buena", 5: "Muy buena" };
   const VISION_LABEL = { "-2": "Muy pesimista", "-1": "Pesimista", "0": "Neutral", "1": "Optimista", "2": "Muy optimista" };
   const GEOJSON_URL = "assets/data/argentina-provincias.geojson";
@@ -28,7 +32,7 @@
   }
 
   function renderLegend(el) {
-    const ramp = RAMP_VARS.map((v) => cssVar(v));
+    const ramp = [cssVar(EMPTY_VAR), ...RAMP_VARS.map((v) => cssVar(v))];
     el.innerHTML = `
       <span>Sin respuestas</span>
       <span class="ramp">${ramp.map((c) => `<span style="background:${c}"></span>`).join("")}</span>
@@ -165,14 +169,14 @@
     }).setView([-38.4, -63.6], 4);
 
     const hairline = cssVar("--hairline") || "#e1e0d9";
-    const surface2 = cssVar("--surface-2") || "#f3f6f7";
+    const emptyFill = cssVar(EMPTY_VAR) || "#cde2fb";
     const navy = cssVar("--navy") || "#04537a";
 
     let selectedLayer = null;
     function baseStyleFor(provinceId) {
       const stat = data.byProvince[provinceId];
       const bucket = bucketFor(stat.count, data.maxCount);
-      const fill = bucket >= 0 ? cssVar(RAMP_VARS[bucket]) : surface2;
+      const fill = bucket >= 0 ? cssVar(RAMP_VARS[bucket]) : emptyFill;
       return {
         fillColor: fill,
         fillOpacity: 0.82,
@@ -209,7 +213,7 @@
     if (caba && caba.point) {
       const stat = data.byProvince.caba;
       const bucket = bucketFor(stat.count, data.maxCount);
-      const fill = bucket >= 0 ? cssVar(RAMP_VARS[bucket]) : surface2;
+      const fill = bucket >= 0 ? cssVar(RAMP_VARS[bucket]) : emptyFill;
       const marker = L.circleMarker(caba.point, {
         radius: 9,
         fillColor: fill,
