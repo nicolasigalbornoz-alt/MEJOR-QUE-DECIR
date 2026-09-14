@@ -12,6 +12,10 @@
  *     fecha de nacimiento ni Instagram.
  *  3) Expone las respuestas de la encuesta como JSON para que el sitio
  *     arme el mapa federal y la síntesis.
+ *  4) Recibe las actas (Word) que suben los responsables de comisión
+ *     desde el panel de administración (admin.html), las guarda en una
+ *     carpeta de Drive y registra el link en la hoja "Actas" para que
+ *     la síntesis las muestre como parte del informe final.
  *
  * Rendimiento: tanto el padrón como las respuestas se guardan un rato en
  * CacheService (memoria compartida entre TODAS las visitas al sitio, no
@@ -63,12 +67,19 @@ const PADRON_CACHE_SECONDS = 1800; // 30 minutos
 const RESPONSES_CACHE_KEY = "mqd_responses_json_v2";
 const PADRON_CACHE_KEY = "mqd_padron_json_v2";
 
+// ---------- Actas de comisión (panel de administración) ----------
+const ACTAS_SHEET_NAME = "Actas"; // hoja única con el registro de actas subidas
+const ACTAS_FOLDER_NAME = "Actas de comisiones — Mejor que decir"; // carpeta de Drive (se crea sola)
+const ACTAS_CACHE_KEY = "mqd_actas_json_v1";
+const ACTAS_HEADERS = ["Marca temporal", "Comisión", "Nombre de archivo", "Link"];
+
 function doGet(e) {
   const action = (e.parameter.action || "").toLowerCase();
   if (action === "search") return handleSearch(e);
   if (action === "responses") return handleResponses();
+  if (action === "actas") return handleActas();
   if (action === "debug") return handleDebug();
-  return jsonOut({ error: "Acción desconocida. Usá ?action=search, ?action=responses o ?action=debug" });
+  return jsonOut({ error: "Acción desconocida. Usá ?action=search, ?action=responses, ?action=actas o ?action=debug" });
 }
 
 // Diagnóstico temporal: a qué planilla está atado el script y qué
@@ -101,6 +112,9 @@ function handleDebug() {
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
+    if (data.tipo === "acta") {
+      return jsonOut(handleActaUpload(data));
+    }
     appendResponse(data);
     return jsonOut({ ok: true });
   } catch (err) {
@@ -245,6 +259,57 @@ function handleResponses() {
   } catch (err) {
     // Demasiadas respuestas para cachear (>100KB): seguimos sin cache,
     // el pedido igual se responde, solo que sin acelerar el siguiente.
+  }
+  return jsonOutRaw(json);
+}
+
+// ---------- Actas de comisión (subidas desde admin.html) ----------
+
+// Carpeta de Drive donde se guardan las actas — se crea sola la primera
+// vez (find-or-create por nombre, así no depende de un ID pegado a mano).
+function getActasFolder() {
+  const existentes = DriveApp.getFoldersByName(ACTAS_FOLDER_NAME);
+  if (existentes.hasNext()) return existentes.next();
+  return DriveApp.createFolder(ACTAS_FOLDER_NAME);
+}
+
+function handleActaUpload(data) {
+  const comision = (data.comision || "").toString().trim();
+  const nombreArchivo = (data.archivoNombre || "acta.docx").toString().trim();
+  const mimeType = (data.mimeType || "application/vnd.openxmlformats-officedocument.wordprocessingml.document").toString();
+  const base64 = (data.archivoBase64 || "").toString();
+  if (!comision) throw new Error("Falta indicar la comisión.");
+  if (!base64) throw new Error("Falta el archivo.");
+
+  const bytes = Utilities.base64Decode(base64);
+  const blob = Utilities.newBlob(bytes, mimeType, nombreArchivo);
+  const file = getActasFolder().createFile(blob);
+  // Cualquiera con el link puede VER/descargar (no editar) — así el
+  // informe final puede enlazar el acta sin que el visitante necesite
+  // iniciar sesión con una cuenta de Google.
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+  const sheet = getOrCreateSheet(ACTAS_SHEET_NAME, ACTAS_HEADERS);
+  sheet.appendRow([new Date(), comision, nombreArchivo, file.getUrl()]);
+  CacheService.getScriptCache().remove(ACTAS_CACHE_KEY);
+
+  return { ok: true, url: file.getUrl() };
+}
+
+function handleActas() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get(ACTAS_CACHE_KEY);
+  if (cached) return jsonOutRaw(cached);
+
+  const sheet = getOrCreateSheet(ACTAS_SHEET_NAME, ACTAS_HEADERS);
+  const values = sheet.getDataRange().getValues();
+  const rows = values.slice(1).filter((r) => r.some((c) => c !== "" && c != null));
+  const cleanRows = rows.map((r) => r.map((c) => (c instanceof Date ? c.toISOString() : c)));
+  const json = JSON.stringify({ headers: ACTAS_HEADERS, rows: cleanRows });
+  try {
+    cache.put(ACTAS_CACHE_KEY, json, RESPONSES_CACHE_SECONDS);
+  } catch (err) {
+    // lista de actas muy larga para cachear: seguimos sin cache.
   }
   return jsonOutRaw(json);
 }

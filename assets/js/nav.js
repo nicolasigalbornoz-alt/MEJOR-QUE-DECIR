@@ -48,6 +48,7 @@
           MEJOR QUE DECIR — un proyecto de escucha de ${cfg.eventoNombre || "Jóvenes FR"}.<br />
           Datos recolectados el ${cfg.eventoFecha || ""} con consentimiento de cada participante.
         </small>
+        <a class="site-footer__admin" href="admin.html">Panel de administración</a>
       </div>
     `;
   }

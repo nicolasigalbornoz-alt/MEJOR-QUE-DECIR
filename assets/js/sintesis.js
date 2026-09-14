@@ -48,6 +48,52 @@
     `;
   }
 
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  const FILE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>';
+
+  // Actas de comisión subidas desde admin.html — no pasan por
+  // MQD_DATA.load() (eso es solo para filas de la encuesta), así que se
+  // piden acá directo con su propio fetch.
+  async function loadActas() {
+    const cfg = window.MQD_CONFIG;
+    if (!cfg.appsScriptUrl || !cfg.appsScriptUrl.trim()) return [];
+    try {
+      const url = cfg.appsScriptUrl.trim().replace(/\/$/, "") + "?action=actas";
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) return [];
+      const json = await res.json();
+      const rows = Array.isArray(json && json.rows) ? json.rows : [];
+      return rows
+        .filter((r) => r && r[1] && r[3])
+        .map((r) => ({ comision: (r[1] || "").toString(), nombre: (r[2] || "").toString(), url: (r[3] || "").toString() }))
+        .reverse(); // más recientes primero (se guardan al final de la hoja)
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function renderActas(el, actas) {
+    if (!actas.length) {
+      el.innerHTML = `<p class="empty-note">Todavía no se subió ninguna acta.</p>`;
+      return;
+    }
+    el.innerHTML = `<div class="drive-list">${actas
+      .map(
+        (a) => `
+      <div class="card drive-item" style="padding:14px 16px;">
+        <a class="drive-item__title" href="${escapeHtml(a.url)}" target="_blank" rel="noopener">
+          <span class="drive-item__icon">${FILE_ICON}</span>
+          ${escapeHtml(a.comision)} ↗
+        </a>
+        <p class="muted small" style="margin:4px 0 0 28px;">${escapeHtml(a.nombre)}</p>
+      </div>`
+      )
+      .join("")}</div>`;
+  }
+
   function dominant(obj) {
     const sorted = window.MQD_sortedEntries(obj);
     return sorted.length ? sorted[0] : null;
@@ -132,7 +178,8 @@
 
   async function init() {
     const banner = document.getElementById("dataBanner");
-    const data = await window.MQD_DATA.load();
+    const [data, actas] = await Promise.all([window.MQD_DATA.load(), loadActas()]);
+    renderActas(document.getElementById("actasList"), actas);
 
     banner.classList.remove("skeleton");
     if (data.isDemo) {

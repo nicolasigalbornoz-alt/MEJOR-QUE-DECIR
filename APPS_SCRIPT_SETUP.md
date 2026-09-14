@@ -111,6 +111,28 @@ despliegue para que los cambios se vean reflejados:
 **Implementar → Administrar implementaciones → ✏️ (editar) → Versión: Nueva versión → Implementar**.
 La URL `/exec` no cambia.
 
+## Actas de comisión (panel de administración)
+
+`admin.html` (link en el pie de página, "Panel de administración") deja
+que los responsables de cada comisión suban el acta (Word) de su
+comisión. El script las guarda en una carpeta de Drive que **se crea
+sola** la primera vez ("Actas de comisiones — Mejor que decir", en la
+raíz de tu Drive) y registra el link en una hoja nueva llamada "Actas"
+— la síntesis (`sintesis.html`) las lista automáticamente.
+
+Como esto usa `DriveApp` por primera vez (antes el script solo tocaba
+Sheets), la próxima vez que reimplementes es esperable que Google te
+vuelva a pedir autorizar permisos — aceptalo igual que la primera vez
+("Avanzado" → "Ir a [proyecto] (no seguro)" → Permitir).
+
+El acceso a `admin.html` es un usuario/contraseña fijos en
+`assets/js/admin.js` (no un login real: cualquiera que mire el código
+fuente del sitio los puede ver). Sirve para que no cualquiera que pasa
+por el sitio suba un archivo por error, no para proteger datos
+sensibles — el acta subida tampoco queda privada, cualquiera con el
+link puede verla (así el informe final puede enlazarla sin pedir cuenta
+de Google a quien lo lee).
+
 ## Si el autocompletado no encuentra a nadie
 
 Abrí en el navegador `TU_URL_/exec?action=debug`. Te muestra a qué
