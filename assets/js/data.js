@@ -213,20 +213,22 @@
   // OJO: Apps Script tiene un "piso" de latencia de varios segundos incluso
   // ya cacheado del lado del servidor (el redirect a script.googleusercontent.com
   // que hace SIEMPRE, cache o no) — medido en la práctica, entre 3 y 4
-  // segundos en condiciones normales. Un timeout de 4000ms (el valor
-  // original) quedaba demasiado justo: cualquier variación normal de red
-  // hacía caer al modo demo aunque el backend funcionara bien, mostrando
-  // "96 respuestas" (el dataset de ejemplo) en vez de las respuestas
-  // reales. 8000ms da margen real sin volver a la espera larga de antes.
-  const FETCH_TIMEOUT_MS = 8000;
+  // segundos en condiciones normales, pero a veces más (frío, mucha gente
+  // a la vez). 10000ms da margen real sin volver a la espera larga de antes.
+  const FETCH_TIMEOUT_MS = 10000;
 
-  function readRowsCache() {
+  // ignoreTtl=true devuelve el último dato REAL que se haya llegado a
+  // cargar en esta pestaña, sin importar la antigüedad — se usa como red
+  // de seguridad cuando el pedido en vivo no llega a tiempo: mostrar un
+  // número real (aunque tenga unos minutos) es mucho mejor que saltar
+  // directo a los 96 de ejemplo, que no tienen nada que ver.
+  function readRowsCache(ignoreTtl) {
     try {
       const raw = sessionStorage.getItem(ROWS_CACHE_KEY);
       if (!raw) return null;
       const parsed = JSON.parse(raw);
       if (!parsed || typeof parsed.ts !== "number" || !Array.isArray(parsed.rows)) return null;
-      if (Date.now() - parsed.ts > ROWS_CACHE_TTL_MS) return null;
+      if (!ignoreTtl && Date.now() - parsed.ts > ROWS_CACHE_TTL_MS) return null;
       return parsed.rows;
     } catch (e) {
       return null; // modo privado, cuota llena, etc. — seguimos sin cache
@@ -270,7 +272,8 @@
           });
           rows = await withTimeout(realFetch, FETCH_TIMEOUT_MS);
         } catch (e) {
-          console.warn("No se pudo leer appsScriptUrl a tiempo, se prueba csvUrl / demo.", e);
+          console.warn("No se pudo leer appsScriptUrl a tiempo, se prueba el último dato real conocido / csvUrl / demo.", e);
+          rows = readRowsCache(true); // dato real aunque esté un poco viejo, mejor que saltar a la demo
         }
       }
 

@@ -180,9 +180,19 @@ window.MQD_FORMKIT = (function () {
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(payload),
     });
-    let ok = res.ok;
-    try { const json = await res.json(); ok = ok && json.ok !== false; } catch (e) { /* respuesta no-JSON: asumimos éxito si HTTP fue ok */ }
-    if (!ok) throw new Error("La respuesta del servidor no fue exitosa.");
+    let json = null;
+    try { json = await res.json(); } catch (e) { /* respuesta no-JSON: asumimos éxito si HTTP fue ok */ }
+    const ok = res.ok && (!json || json.ok !== false);
+    if (!ok) {
+      // Si Apps Script devolvió un motivo (json.error, del catch de
+      // doPost), lo mostramos — mucho más útil para diagnosticar que un
+      // mensaje genérico, sobre todo para algo como la subida de actas
+      // donde el motivo real puede ser, por ejemplo, un permiso de Drive
+      // que falta autorizar.
+      const detalle = json && json.error ? String(json.error) : ("HTTP " + res.status);
+      throw new Error("La respuesta del servidor no fue exitosa (" + detalle + ").");
+    }
+    return json;
   }
 
   return {
