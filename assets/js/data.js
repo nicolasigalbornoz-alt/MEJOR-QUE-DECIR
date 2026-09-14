@@ -203,7 +203,13 @@
   //     real sigue en curso igual — si termina llegando, se cachea para
   //     la próxima página (aunque ya no cambie lo que se ve ahora).
   const ROWS_CACHE_KEY = "mqd_rows_cache_v1";
-  const ROWS_CACHE_TTL_MS = 25000; // 25s: alcanza para navegar sin re-pedir, corto para seguir "en vivo"
+  // El backend (Code.gs) ahora solo recalcula el informe cada 10
+  // respuestas nuevas o cada 20 minutos (lo que pase primero) — pedirle
+  // de nuevo antes de eso casi siempre trae exactamente lo mismo. 60s
+  // alcanza de sobra para navegar entre páginas sin re-pedir, sin
+  // quedarse pegado a datos viejos por mucho rato si alguien se queda
+  // un buen rato en la misma pestaña.
+  const ROWS_CACHE_TTL_MS = 60000;
   // OJO: Apps Script tiene un "piso" de latencia de varios segundos incluso
   // ya cacheado del lado del servidor (el redirect a script.googleusercontent.com
   // que hace SIEMPRE, cache o no) — medido en la práctica, entre 3 y 4
