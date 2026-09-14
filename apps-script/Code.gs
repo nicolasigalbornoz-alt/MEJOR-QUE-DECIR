@@ -22,8 +22,12 @@
  * por usuario) para no releer la planilla entera en cada pedido — con
  * mucha gente mirando el mapa/síntesis a la vez el día del encuentro,
  * releer la hoja completa en cada request es lo que hace sentir lento
- * al sitio. Cuando entra una respuesta nueva, se invalida el cache de
- * respuestas al toque para que no tarde en aparecer.
+ * al sitio. El informe (mapa/síntesis) no se recalcula en cada respuesta
+ * nueva: se actualiza cada REPORT_REFRESH_EVERY_N respuestas, o cuando
+ * pasan REPORT_REFRESH_MAX_AGE_SECONDS sin llegar a esa cantidad — lo que
+ * pase primero (ver appendResponse). Así no se recalcula todo el tiempo,
+ * pero tampoco se queda desactualizado mucho rato si llegan pocas
+ * respuestas.
  *
  * Instalación: ver /APPS_SCRIPT_SETUP.md en el repo.
  */
@@ -58,14 +62,26 @@ const RESPUESTA_HEADERS = [
 ];
 
 // Cuánto se guarda cada cosa en CacheService antes de releer la planilla.
-// Las respuestas se invalidan solas apenas entra una nueva (ver
-// appendResponse), así que este número es más un tope de seguridad que
-// un retraso real. El padrón no cambia durante el evento, así que puede
-// quedarse cacheado más tiempo sin problema.
-const RESPONSES_CACHE_SECONDS = 30;
+// El padrón no cambia durante el evento, así que puede quedarse cacheado
+// mucho tiempo sin problema. Las respuestas usan una política distinta,
+// pensada para no recalcular el informe todo el tiempo — ver
+// REPORT_REFRESH_EVERY_N / REPORT_REFRESH_MAX_AGE_SECONDS y appendResponse().
 const PADRON_CACHE_SECONDS = 1800; // 30 minutos
 const RESPONSES_CACHE_KEY = "mqd_responses_json_v2";
 const PADRON_CACHE_KEY = "mqd_padron_json_v2";
+
+// El informe (mapa/síntesis) se refresca cada 10 respuestas nuevas, o
+// cada 20 minutos si en ese rato no se juntaron 10 — lo que pase primero.
+// REPORT_REFRESH_MAX_AGE_SECONDS es el TTL "de tope" del cache: si nunca
+// se llega a REPORT_REFRESH_EVERY_N, el cache vence solo a los 20 minutos
+// y el siguiente pedido recalcula. PENDING_COUNT_KEY cuenta, en
+// PropertiesService (persiste entre ejecuciones, a diferencia de una
+// variable normal), cuántas respuestas nuevas entraron desde el último
+// refresco.
+const REPORT_REFRESH_EVERY_N = 10;
+const REPORT_REFRESH_MAX_AGE_SECONDS = 1200; // 20 minutos
+const RESPONSES_CACHE_SECONDS = REPORT_REFRESH_MAX_AGE_SECONDS;
+const PENDING_COUNT_KEY = "mqd_pending_count_v1";
 
 // ---------- Actas de comisión (panel de administración) ----------
 const ACTAS_SHEET_NAME = "Actas"; // hoja única con el registro de actas subidas
@@ -233,9 +249,40 @@ function appendResponse(data) {
     data.visionEscala != null ? data.visionEscala : "",
     (data.visionFrase || "").toString().trim(),
   ]);
-  // Que la respuesta recién guardada aparezca ya en el mapa/síntesis, sin
-  // esperar a que venza el cache de ?action=responses.
-  CacheService.getScriptCache().remove(RESPONSES_CACHE_KEY);
+  bumpPendingCountAndMaybeRefresh();
+}
+
+// Cuenta esta respuesta nueva contra el lote de REPORT_REFRESH_EVERY_N; al
+// llegar al lote, invalida el cache del informe (se recalcula en el
+// próximo ?action=responses) y reinicia el contador. Si no se llega al
+// lote, el informe igual se refresca solo cuando venza el TTL del cache
+// (REPORT_REFRESH_MAX_AGE_SECONDS) — no hace falta hacer nada más acá
+// para eso.
+//
+// Usa LockService porque, con varias personas mandando la encuesta casi
+// al mismo tiempo (esperable el día del encuentro), dos ejecuciones
+// podrían leer el mismo valor del contador y pisarse una a la otra sin
+// esto — no arruinaría nada grave, pero el refresco cada 10 dejaría de
+// ser preciso.
+function bumpPendingCountAndMaybeRefresh() {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(5000);
+  } catch (err) {
+    return; // no se pudo tomar el lock a tiempo: la respuesta ya se guardó igual, solo no cuenta para el lote esta vez
+  }
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const count = (Number(props.getProperty(PENDING_COUNT_KEY)) || 0) + 1;
+    if (count >= REPORT_REFRESH_EVERY_N) {
+      CacheService.getScriptCache().remove(RESPONSES_CACHE_KEY);
+      props.setProperty(PENDING_COUNT_KEY, "0");
+    } else {
+      props.setProperty(PENDING_COUNT_KEY, String(count));
+    }
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 // ---------- Exponer respuestas para el mapa / síntesis ----------

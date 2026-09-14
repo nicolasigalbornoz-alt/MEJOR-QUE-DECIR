@@ -18,7 +18,14 @@
   const USUARIO = "Encuentronacional";
   const CLAVE = "JóvenesFR";
   const SESSION_KEY = "mqd_admin_ok";
-  const MAX_MB = 20;
+  // OJO: Apps Script recibe el archivo como base64 adentro de un POST que
+  // además pasa por un redirect propio de Google (script.google.com ->
+  // script.googleusercontent.com) — con archivos grandes ese camino se
+  // pone poco confiable (falla la subida sin un motivo claro). 8MB es un
+  // techo conservador para que ande bien de verdad; un acta en Word con
+  // texto normal pesa muchísimo menos que eso.
+  const MAX_MB = 8;
+  const WARN_MB = 3; // a partir de acá, avisamos que puede tardar
 
   // Tiene que coincidir con la lista de comisiones de assets/js/encuesta.js.
   const COMISIONES = [
@@ -48,6 +55,24 @@
       reader.onerror = () => reject(new Error("No se pudo leer el archivo."));
       reader.readAsDataURL(file);
     });
+  }
+
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  // Los archivos grandes por este camino (POST con el archivo en base64,
+  // pasando por el redirect propio de Apps Script) a veces fallan por una
+  // sola vez sin motivo claro — un reintento corto resuelve la mayoría de
+  // esos casos sin marear a quien está subiendo el acta con un error que
+  // en realidad era pasajero.
+  async function uploadActaConReintento(payload) {
+    try {
+      await submitToAppsScript(payload);
+    } catch (err) {
+      await sleep(1200);
+      await submitToAppsScript(payload);
+    }
   }
 
   function buildLogin(onSuccess) {
@@ -101,13 +126,26 @@
       class: "input", type: "file",
       accept: ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     });
+    const sizeHint = el("p", { class: "muted small", style: "margin:6px 0 0; display:none;" });
+    fileInput.addEventListener("change", () => {
+      const f = fileInput.files[0];
+      if (f && f.size > WARN_MB * 1024 * 1024) {
+        sizeHint.textContent = "Archivo pesado: puede tardar unos segundos en subir, no cierres la página.";
+        sizeHint.style.display = "block";
+      } else {
+        sizeHint.style.display = "none";
+      }
+    });
 
     const msg = el("div", { class: "form-msg" });
     const btn = el("button", { class: "btn btn-primary btn-block", type: "submit" }, [text("Subir acta")]);
 
+    const fArchivo = fieldWrap("Archivo (Word)", fileInput, { key: "archivo", error: "Elegí un archivo." });
+    fArchivo.appendChild(sizeHint);
+
     const form = el("form", { novalidate: "novalidate" }, [
       fieldWrap("Comisión", selectWrap, { key: "comision", error: "Elegí tu comisión." }),
-      fieldWrap("Archivo (Word)", fileInput, { key: "archivo", error: "Elegí un archivo." }),
+      fArchivo,
       el("div", { class: "survey-submit" }, [btn, msg]),
     ]);
 
@@ -140,7 +178,7 @@
       btn.textContent = "Subiendo…";
       try {
         const archivoBase64 = await fileToBase64(file);
-        await submitToAppsScript({
+        await uploadActaConReintento({
           tipo: "acta",
           comision,
           archivoNombre: file.name,
@@ -148,11 +186,14 @@
           archivoBase64,
         });
         form.reset();
+        sizeHint.style.display = "none";
         msg.textContent = "¡Listo! El acta ya se subió y va a aparecer en la síntesis.";
         msg.classList.add("is-visible", "success");
       } catch (err) {
         console.error(err);
-        msg.textContent = "No pudimos subir el archivo (revisá tu conexión) e intentá de nuevo.";
+        msg.textContent = file.size > WARN_MB * 1024 * 1024
+          ? "No pudimos subir el archivo. Con archivos pesados a veces falla — probá de nuevo, o con uno más liviano si se repite."
+          : "No pudimos subir el archivo (revisá tu conexión) e intentá de nuevo.";
         msg.classList.add("is-visible", "error");
       } finally {
         btn.disabled = false;
