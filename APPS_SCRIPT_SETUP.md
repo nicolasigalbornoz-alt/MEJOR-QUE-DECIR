@@ -121,9 +121,20 @@ raíz de tu Drive) y registra el link en una hoja nueva llamada "Actas"
 — la síntesis (`sintesis.html`) las lista automáticamente.
 
 Como esto usa `DriveApp` por primera vez (antes el script solo tocaba
-Sheets), la próxima vez que reimplementes es esperable que Google te
-vuelva a pedir autorizar permisos — aceptalo igual que la primera vez
-("Avanzado" → "Ir a [proyecto] (no seguro)" → Permitir).
+Sheets), hay que autorizar ese permiso nuevo — **y ojo, desplegar una
+"Nueva versión" del Web App NO alcanza por sí solo** para que aparezca
+el cartel de autorización. Sin este paso, las subidas de actas fallan
+sin ningún aviso claro (para quien sube, "no pudimos subir el
+archivo"; en la planilla, ninguna fila nueva, ningún error visible).
+
+Para autorizarlo:
+1. En el editor de Apps Script, arriba (al lado de "Depurar"), elegí en
+   el desplegable de funciones **`autorizarPermisoDeDrive`**.
+2. Tocá **▶ Ejecutar**.
+3. Ahí sí va a aparecer el cartel de autorización — elegí tu cuenta →
+   "Avanzado" → "Ir a [nombre del proyecto] (no seguro)" → Permitir.
+4. Con eso ya autorizado, no hace falta hacer nada más — no requiere
+   una nueva implementación.
 
 El acceso a `admin.html` es un usuario/contraseña fijos en
 `assets/js/admin.js` (no un login real: cualquiera que mire el código

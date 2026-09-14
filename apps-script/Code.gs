@@ -312,6 +312,19 @@ function handleResponses() {
 
 // ---------- Actas de comisión (subidas desde admin.html) ----------
 
+// Ejecutar UNA VEZ a mano desde el editor (▶ Ejecutar, elegir esta
+// función arriba) después de pegar este código. Google Apps Script solo
+// pide autorizar un permiso NUEVO (acá, Google Drive) cuando alguna
+// función se corre desde el editor con ese permiso adentro — desplegar
+// una "Nueva versión" del Web App NO alcanza por sí solo para que
+// aparezca el cartel de autorización. Sin este paso, todas las subidas
+// de actas fallan en silencio (para quien sube, con "no pudimos subir
+// el archivo"; en la planilla, sin ningún error visible ni fila nueva).
+// No hace nada más que esto, no crea ni borra nada real.
+function autorizarPermisoDeDrive() {
+  DriveApp.getRootFolder().getName();
+}
+
 // Carpeta de Drive donde se guardan las actas — se crea sola la primera
 // vez (find-or-create por nombre, así no depende de un ID pegado a mano).
 function getActasFolder() {

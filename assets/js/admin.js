@@ -191,9 +191,18 @@
         msg.classList.add("is-visible", "success");
       } catch (err) {
         console.error(err);
-        msg.textContent = file.size > WARN_MB * 1024 * 1024
-          ? "No pudimos subir el archivo. Con archivos pesados a veces falla — probá de nuevo, o con uno más liviano si se repite."
-          : "No pudimos subir el archivo (revisá tu conexión) e intentá de nuevo.";
+        // Si el error trae un motivo concreto del servidor (por ejemplo un
+        // permiso de Drive que falta autorizar), lo mostramos tal cual —
+        // mucho más útil para saber qué pasa de verdad que un mensaje
+        // genérico de "revisá tu conexión".
+        const esErrorDelServidor = err && /respuesta del servidor/i.test(err.message || "");
+        if (esErrorDelServidor) {
+          msg.textContent = "No pudimos subir el archivo: " + err.message;
+        } else {
+          msg.textContent = file.size > WARN_MB * 1024 * 1024
+            ? "No pudimos subir el archivo. Con archivos pesados a veces falla — probá de nuevo, o con uno más liviano si se repite."
+            : "No pudimos subir el archivo (revisá tu conexión) e intentá de nuevo.";
+        }
         msg.classList.add("is-visible", "error");
       } finally {
         btn.disabled = false;
