@@ -128,6 +128,9 @@ function handleDebug() {
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
+    if (data.tipo === "adminLogin") {
+      return jsonOut(handleAdminLogin(data));
+    }
     if (data.tipo === "acta") {
       return jsonOut(handleActaUpload(data));
     }
@@ -308,6 +311,31 @@ function handleResponses() {
     // el pedido igual se responde, solo que sin acelerar el siguiente.
   }
   return jsonOutRaw(json);
+}
+
+// ---------- Login del panel de administración (admin.html) ----------
+
+// El usuario/contraseña NUNCA viven en el código del sitio (JS que le
+// llega a cualquier visitante) ni en este archivo (que también termina
+// público, en el repo de GitHub) — viven como "Propiedades del script",
+// que se cargan a mano una sola vez desde el editor de Apps Script
+// (ícono de engranaje "Configuración del proyecto" > "Propiedades del
+// script" > agregar ADMIN_USER y ADMIN_PASS) y nunca se comitean a
+// ningún lado. Así ni mirar el repo ni hacer "ver código fuente" del
+// sitio revela las credenciales reales.
+function handleAdminLogin(data) {
+  const props = PropertiesService.getScriptProperties();
+  const usuarioOk = props.getProperty("ADMIN_USER");
+  const claveOk = props.getProperty("ADMIN_PASS");
+  if (!usuarioOk || !claveOk) {
+    throw new Error("El panel de administración todavía no tiene usuario/contraseña configurados (faltan las Propiedades del script ADMIN_USER/ADMIN_PASS).");
+  }
+  const usuario = (data.usuario || "").toString().trim();
+  const clave = (data.clave || "").toString();
+  if (usuario === usuarioOk && clave === claveOk) {
+    return { ok: true };
+  }
+  return { ok: false, error: "Usuario o contraseña incorrectos." };
 }
 
 // ---------- Actas de comisión (subidas desde admin.html) ----------

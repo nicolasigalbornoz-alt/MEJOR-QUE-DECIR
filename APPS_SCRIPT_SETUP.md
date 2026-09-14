@@ -141,13 +141,31 @@ Para autorizarlo:
    registros (ícono de reloj/registro a la izquierda, o menú Ver >
    Registros de ejecución) para ver el link directo a esa carpeta.
 
-El acceso a `admin.html` es un usuario/contraseña fijos en
-`assets/js/admin.js` (no un login real: cualquiera que mire el código
-fuente del sitio los puede ver). Sirve para que no cualquiera que pasa
-por el sitio suba un archivo por error, no para proteger datos
-sensibles — el acta subida tampoco queda privada, cualquiera con el
-link puede verla (así el informe final puede enlazarla sin pedir cuenta
-de Google a quien lo lee).
+El acceso a `admin.html` pide usuario/contraseña, pero **el valor real
+no está en ningún archivo del sitio ni del repo** — se valida en Apps
+Script (`handleAdminLogin` en `Code.gs`) contra dos Propiedades del
+script que hay que cargar una sola vez, a mano:
+
+1. En el editor de Apps Script, tocá el ícono de engranaje ⚙️
+   ("Configuración del proyecto") en el menú de la izquierda.
+2. Bajá hasta **"Propiedades del script"** → **"Agregar propiedad del
+   script"**.
+3. Agregá una propiedad `ADMIN_USER` con el usuario que quieras (por
+   ejemplo `Encuentronacional`), y otra `ADMIN_PASS` con la contraseña
+   (por ejemplo `JóvenesFR`). Guardá.
+
+Con eso ya funciona — no requiere una nueva implementación, y podés
+cambiar el usuario/contraseña cuando quieras editando esas dos
+propiedades, sin tocar código ni el repo de GitHub.
+
+Sigue siendo un candado liviano (no hay usuarios individuales ni
+tokens con vencimiento) — sirve para que no cualquiera que pasa por el
+sitio suba un archivo por error, no para proteger datos sensibles — el
+acta subida tampoco queda privada, cualquiera con el link puede verla
+(así el informe final puede enlazarla sin pedir cuenta de Google a
+quien lo lee). Pero a diferencia de antes, ni mirando el repo público
+en GitHub ni con "ver código fuente" del sitio se puede ver el usuario
+o la contraseña reales.
 
 ## Si el autocompletado no encuentra a nadie
 
