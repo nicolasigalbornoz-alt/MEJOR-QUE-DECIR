@@ -204,7 +204,15 @@
   //     la próxima página (aunque ya no cambie lo que se ve ahora).
   const ROWS_CACHE_KEY = "mqd_rows_cache_v1";
   const ROWS_CACHE_TTL_MS = 25000; // 25s: alcanza para navegar sin re-pedir, corto para seguir "en vivo"
-  const FETCH_TIMEOUT_MS = 4000;
+  // OJO: Apps Script tiene un "piso" de latencia de varios segundos incluso
+  // ya cacheado del lado del servidor (el redirect a script.googleusercontent.com
+  // que hace SIEMPRE, cache o no) — medido en la práctica, entre 3 y 4
+  // segundos en condiciones normales. Un timeout de 4000ms (el valor
+  // original) quedaba demasiado justo: cualquier variación normal de red
+  // hacía caer al modo demo aunque el backend funcionara bien, mostrando
+  // "96 respuestas" (el dataset de ejemplo) en vez de las respuestas
+  // reales. 8000ms da margen real sin volver a la espera larga de antes.
+  const FETCH_TIMEOUT_MS = 8000;
 
   function readRowsCache() {
     try {
