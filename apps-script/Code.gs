@@ -320,9 +320,13 @@ function handleResponses() {
 // aparezca el cartel de autorización. Sin este paso, todas las subidas
 // de actas fallan en silencio (para quien sube, con "no pudimos subir
 // el archivo"; en la planilla, sin ningún error visible ni fila nueva).
-// No hace nada más que esto, no crea ni borra nada real.
+// De paso crea (si no existe todavía) la carpeta de Drive donde van a
+// quedar las actas, y deja su link en el registro de ejecución (menú
+// Ver > Registros de ejecución, o el panel que se abre solo después de
+// ejecutar) para saber exactamente dónde están guardadas.
 function autorizarPermisoDeDrive() {
-  DriveApp.getRootFolder().getName();
+  const folder = getActasFolder();
+  Logger.log("Carpeta de actas en Drive: " + folder.getUrl());
 }
 
 // Carpeta de Drive donde se guardan las actas — se crea sola la primera

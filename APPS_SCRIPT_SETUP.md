@@ -135,6 +135,11 @@ Para autorizarlo:
    "Avanzado" → "Ir a [nombre del proyecto] (no seguro)" → Permitir.
 4. Con eso ya autorizado, no hace falta hacer nada más — no requiere
    una nueva implementación.
+5. Esta función de paso crea la carpeta de Drive donde van a quedar las
+   actas ("Actas de comisiones — Mejor que decir") y deja su link en el
+   registro de ejecución: después de ejecutar, abrí el panel de
+   registros (ícono de reloj/registro a la izquierda, o menú Ver >
+   Registros de ejecución) para ver el link directo a esa carpeta.
 
 El acceso a `admin.html` es un usuario/contraseña fijos en
 `assets/js/admin.js` (no un login real: cualquiera que mire el código
