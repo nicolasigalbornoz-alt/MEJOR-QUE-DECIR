@@ -1,18 +1,21 @@
 /**
- * Mapa federal — mapa interactivo hecho de cero con Leaflet: polígonos
- * reales de las 23 provincias + CABA como punto, sobre fondo liso propio
- * (sin imágenes de mapa de terceros, así no lleva ninguna marca de agua).
- * Cada distrito es tocable; el color codifica la cantidad de respuestas
- * (escala secuencial de un solo tono, claro→oscuro).
+ * Motor del mapa federal — hecho de cero con Leaflet: polígonos reales de
+ * las 23 provincias + CABA como punto, sobre fondo liso propio (sin
+ * imágenes de mapa de terceros, así no lleva ninguna marca de agua). El
+ * color codifica la cantidad de respuestas (escala secuencial de un solo
+ * tono, claro→oscuro).
+ *
+ * window.MQD_MAP expone el motor de dibujo para que lo use tanto
+ * mapa.html (versión interactiva completa, con hoja de detalle por
+ * distrito) como sintesis.html (mini-mapa de solo lectura, la "foto" del
+ * mapa dentro del documento).
  */
-(function () {
+window.MQD_MAP = (function () {
   const RAMP_VARS = ["--seq-150", "--seq-250", "--seq-350", "--seq-450", "--seq-550", "--seq-650"];
   // Provincias sin ninguna respuesta: el tono más pálido de la misma escala
   // (no el gris de fondo del mapa) para que el distrito siga viéndose como
   // parte del mapa en vez de desaparecer contra el fondo.
   const EMPTY_VAR = "--seq-100";
-  const SITUACION_LABEL = { 1: "Muy mala", 2: "Mala", 3: "Regular", 4: "Buena", 5: "Muy buena" };
-  const VISION_LABEL = { "-2": "Muy pesimista", "-1": "Pesimista", "0": "Neutral", "1": "Optimista", "2": "Muy optimista" };
   const GEOJSON_URL = "assets/data/argentina-provincias.geojson";
 
   function cssVar(name) {
@@ -25,10 +28,10 @@
     return Math.min(RAMP_VARS.length - 1, Math.floor(ratio * RAMP_VARS.length));
   }
 
-  function fmtAvg(sum, n, labels) {
-    if (!n) return "Sin datos aún";
-    const avg = Math.round(sum / n);
-    return labels[avg] || labels[String(avg)] || "—";
+  async function loadGeoJson() {
+    const res = await fetch(GEOJSON_URL, { cache: "force-cache" });
+    if (!res.ok) throw new Error("No se pudo cargar el mapa (" + res.status + ")");
+    return res.json();
   }
 
   function renderLegend(el) {
@@ -38,6 +41,110 @@
       <span class="ramp">${ramp.map((c) => `<span style="background:${c}"></span>`).join("")}</span>
       <span>Más respuestas</span>
     `;
+  }
+
+  // Dibuja el choropleth en cualquier contenedor.
+  // opts:
+  //  - interactive (default true): si es false, se apaga zoom/pan/hover/tap
+  //    — para la "foto" de solo lectura del documento de síntesis.
+  //  - onFeatureClick(provinceId, layer, resetStyleFn): si se pasa, se
+  //    engancha en cada distrito (polígono o el punto de CABA); quien la
+  //    pase decide qué hacer al tocar (mapa.html abre la hoja de detalle).
+  function render(mapEl, geo, data, opts) {
+    opts = opts || {};
+    const interactive = opts.interactive !== false;
+
+    const map = L.map(mapEl, {
+      zoomControl: interactive,
+      attributionControl: false,
+      dragging: interactive,
+      scrollWheelZoom: interactive,
+      doubleClickZoom: interactive,
+      touchZoom: interactive,
+      boxZoom: interactive,
+      keyboard: interactive,
+      tap: interactive,
+      minZoom: 4,
+      maxZoom: 8,
+      zoomSnap: 0.25,
+      worldCopyJump: false,
+    }).setView([-38.4, -63.6], 4);
+
+    const emptyFill = cssVar(EMPTY_VAR) || "#cde2fb";
+
+    function baseStyleFor(provinceId) {
+      const stat = data.byProvince[provinceId];
+      const bucket = bucketFor(stat.count, data.maxCount);
+      const fill = bucket >= 0 ? cssVar(RAMP_VARS[bucket]) : emptyFill;
+      return {
+        fillColor: fill,
+        fillOpacity: 0.82,
+        color: "#fff",
+        weight: 1.2,
+        dashArray: bucket >= 0 ? null : "3,3",
+      };
+    }
+
+    let geoLayer = null;
+    if (geo) {
+      geoLayer = L.geoJSON(geo, {
+        interactive: interactive,
+        style: (feature) => baseStyleFor(feature.properties.id),
+        onEachFeature: (feature, layer) => {
+          const pid = feature.properties.id;
+          if (opts.onFeatureClick) {
+            layer.on("click", () => opts.onFeatureClick(pid, layer, () => layer.setStyle(baseStyleFor(pid))));
+          }
+          if (interactive) {
+            layer.on("mouseover", () => layer.setStyle({ weight: 2.4 }));
+            layer.on("mouseout", () => layer.setStyle(baseStyleFor(pid)));
+          }
+        },
+      }).addTo(map);
+
+      try { map.fitBounds(geoLayer.getBounds(), { padding: [12, 12] }); } catch (e) { /* noop */ }
+    }
+
+    // CABA no tiene polígono propio en el dataset (queda dentro del contorno
+    // de Buenos Aires): se muestra como un punto tocable en su centroide.
+    const caba = window.MQD_PROVINCE_BY_ID.caba;
+    if (caba && caba.point) {
+      const stat = data.byProvince.caba;
+      const bucket = bucketFor(stat.count, data.maxCount);
+      const fill = bucket >= 0 ? cssVar(RAMP_VARS[bucket]) : emptyFill;
+      const marker = L.circleMarker(caba.point, {
+        radius: 9,
+        fillColor: fill,
+        fillOpacity: 0.95,
+        color: "#fff",
+        weight: 2,
+        interactive: interactive,
+      }).addTo(map);
+      if (opts.onFeatureClick) {
+        marker.on("click", () => opts.onFeatureClick("caba", marker, () => marker.setStyle({ weight: 2 })));
+      }
+      if (interactive) marker.bindTooltip("CABA", { direction: "top", offset: [0, -6] });
+    }
+
+    return map;
+  }
+
+  return { loadGeoJson, render, renderLegend, bucketFor, cssVar, RAMP_VARS, EMPTY_VAR };
+})();
+
+/**
+ * Driver de mapa.html: el mapa interactivo completo, con hoja de detalle
+ * por distrito (problemas/necesidades/testimonios de cada provincia).
+ */
+(function () {
+  const M = window.MQD_MAP;
+  const SITUACION_LABEL = { 1: "Muy mala", 2: "Mala", 3: "Regular", 4: "Buena", 5: "Muy buena" };
+  const VISION_LABEL = { "-2": "Muy pesimista", "-1": "Pesimista", "0": "Neutral", "1": "Optimista", "2": "Muy optimista" };
+
+  function fmtAvg(sum, n, labels) {
+    if (!n) return "Sin datos aún";
+    const avg = Math.round(sum / n);
+    return labels[avg] || labels[String(avg)] || "—";
   }
 
   function buildSheetContent(stat) {
@@ -116,24 +223,19 @@
     return { open, close };
   }
 
-  async function loadGeoJson() {
-    const res = await fetch(GEOJSON_URL, { cache: "force-cache" });
-    if (!res.ok) throw new Error("No se pudo cargar el mapa (" + res.status + ")");
-    return res.json();
-  }
-
   async function init() {
     const mapEl = document.getElementById("mapCanvas");
+    if (!mapEl) return; // esta página no tiene el mapa completo (ej. síntesis)
     const legend = document.getElementById("mapLegend");
     const banner = document.getElementById("dataBanner");
     const statTotal = document.getElementById("statTotal");
     const statProv = document.getElementById("statProv");
     const statLoc = document.getElementById("statLoc");
 
-    renderLegend(legend);
+    M.renderLegend(legend);
 
     const [geo, data] = await Promise.all([
-      loadGeoJson().catch((e) => { console.error(e); return null; }),
+      M.loadGeoJson().catch((e) => { console.error(e); return null; }),
       window.MQD_DATA.load(),
     ]);
 
@@ -153,80 +255,18 @@
     statLoc.textContent = data.totalLocalidades;
 
     const sheet = initSheet(data);
+    const navy = M.cssVar("--navy") || "#04537a";
 
-    // Mapa "de cero": sin imágenes de fondo de terceros (ni Google Maps, ni
-    // OSM/CARTO), así no lleva ninguna marca de agua. Solo se dibujan los
-    // polígonos propios (assets/data/argentina-provincias.geojson) sobre un
-    // fondo liso — al ser un mapa temático (color = cantidad de respuestas),
-    // no hace falta calle ni satélite de base.
-    const map = L.map(mapEl, {
-      zoomControl: true,
-      attributionControl: false,
-      minZoom: 4,
-      maxZoom: 8,
-      zoomSnap: 0.25,
-      worldCopyJump: false,
-    }).setView([-38.4, -63.6], 4);
-
-    const hairline = cssVar("--hairline") || "#e1e0d9";
-    const emptyFill = cssVar(EMPTY_VAR) || "#cde2fb";
-    const navy = cssVar("--navy") || "#04537a";
-
-    let selectedLayer = null;
-    function baseStyleFor(provinceId) {
-      const stat = data.byProvince[provinceId];
-      const bucket = bucketFor(stat.count, data.maxCount);
-      const fill = bucket >= 0 ? cssVar(RAMP_VARS[bucket]) : emptyFill;
-      return {
-        fillColor: fill,
-        fillOpacity: 0.82,
-        color: "#fff",
-        weight: 1.2,
-        dashArray: bucket >= 0 ? null : "3,3",
-      };
-    }
-
-    function selectLayer(layer, provinceId) {
-      layer.setStyle({ weight: 3, color: navy });
-      layer.bringToFront();
-      return () => layer.setStyle(baseStyleFor(provinceId));
-    }
-
-    let geoLayer = null;
-    if (geo) {
-      geoLayer = L.geoJSON(geo, {
-        style: (feature) => baseStyleFor(feature.properties.id),
-        onEachFeature: (feature, layer) => {
-          const pid = feature.properties.id;
-          layer.on("click", () => sheet.open(pid, () => selectLayer(layer, pid)));
-          layer.on("mouseover", () => { if (layer !== selectedLayer) layer.setStyle({ weight: 2.4 }); });
-          layer.on("mouseout", () => { if (layer !== selectedLayer) layer.setStyle(baseStyleFor(pid)); });
-        },
-      }).addTo(map);
-
-      try { map.fitBounds(geoLayer.getBounds(), { padding: [12, 12] }); } catch (e) { /* noop */ }
-    }
-
-    // CABA no tiene polígono propio en el dataset (queda dentro del contorno
-    // de Buenos Aires): se muestra como un punto tocable en su centroide.
-    const caba = window.MQD_PROVINCE_BY_ID.caba;
-    if (caba && caba.point) {
-      const stat = data.byProvince.caba;
-      const bucket = bucketFor(stat.count, data.maxCount);
-      const fill = bucket >= 0 ? cssVar(RAMP_VARS[bucket]) : emptyFill;
-      const marker = L.circleMarker(caba.point, {
-        radius: 9,
-        fillColor: fill,
-        fillOpacity: 0.95,
-        color: "#fff",
-        weight: 2,
-      }).addTo(map);
-      marker.on("click", () => sheet.open("caba", () => {
-        marker.setStyle({ weight: 2 });
-        return () => marker.setStyle({ weight: 2 });
-      }));
-      marker.bindTooltip("CABA", { direction: "top", offset: [0, -6] });
-    }
+    M.render(mapEl, geo, data, {
+      interactive: true,
+      onFeatureClick: (pid, layer, resetStyle) => {
+        sheet.open(pid, () => {
+          layer.setStyle({ weight: 3, color: navy });
+          if (layer.bringToFront) layer.bringToFront();
+          return resetStyle;
+        });
+      },
+    });
   }
 
   document.addEventListener("DOMContentLoaded", init);

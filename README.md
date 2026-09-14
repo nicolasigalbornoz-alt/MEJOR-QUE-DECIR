@@ -22,6 +22,7 @@ y convierte esas respuestas en un **mapa federal** interactivo y un
 | `mapa.html` | Mapa federal interactivo (Leaflet): provincias reales, tocable/pellizcable. |
 | `sintesis.html` | Documento de síntesis auto-generado, con botón de descarga/impresión. |
 | `insumos.html` | Materiales para la militancia (carpetas de Drive explorables + Centros de Estudios). |
+| `admin.html` | Panel de administración (link en el pie de página): los responsables de comisión suben el acta (Word) de su comisión, que se lista en la síntesis. Acceso con usuario/contraseña fijos — ver advertencia en `assets/js/admin.js`. |
 
 ## Cómo funciona (sin backend propio)
 
@@ -60,6 +61,7 @@ encuesta.html           Encuesta (formulario propio)
 mapa.html               Mapa federal
 sintesis.html           Documento de síntesis
 insumos.html            Materiales para la militancia
+admin.html              Panel de administración (subida de actas de comisión)
 APPS_SCRIPT_SETUP.md    Cómo conectar el backend (paso a paso)
 apps-script/
   Code.gs               Backend: guarda respuestas + autocompleta nombres
