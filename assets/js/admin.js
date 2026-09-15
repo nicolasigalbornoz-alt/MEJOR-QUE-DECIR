@@ -3,20 +3,21 @@
  * cada comisión suban el acta (Word) de su comisión, que después se
  * lista en la síntesis como parte del informe final.
  *
- * OJO — esto es un candado liviano, no un login real: el usuario y la
- * contraseña quedan en este archivo, que es público (el sitio entero
- * está en un repo público en GitHub). Sirve para que no cualquiera que
- * pasa por la página suba un archivo por error, no para proteger datos
- * sensibles. El archivo subido tampoco es privado: cualquiera con el
- * link puede verlo (así el informe final puede enlazarlo sin pedirle
- * cuenta de Google a quien lo lee).
+ * El usuario/contraseña se validan en el backend (Apps Script,
+ * handleAdminLogin en Code.gs) — NO están en este archivo ni en ningún
+ * otro archivo del sitio, así que no aparecen ni mirando el repo
+ * público en GitHub ni con "ver código fuente" del navegador. Sigue
+ * siendo un candado liviano (no hay usuarios individuales, ni tokens
+ * con vencimiento) — sirve para que no cualquiera que pasa por la
+ * página suba un archivo por error, no para proteger datos sensibles.
+ * El archivo subido tampoco es privado: cualquiera con el link puede
+ * verlo (así el informe final puede enlazarlo sin pedirle cuenta de
+ * Google a quien lo lee).
  */
 (function () {
   const K = window.MQD_FORMKIT;
   const { el, text, fieldWrap, submitToAppsScript } = K;
 
-  const USUARIO = "Encuentronacional";
-  const CLAVE = "JóvenesFR";
   const SESSION_KEY = "mqd_admin_ok";
   // OJO: Apps Script recibe el archivo como base64 adentro de un POST que
   // además pasa por un redirect propio de Google (script.google.com ->
@@ -90,15 +91,42 @@
       el("div", { class: "survey-submit" }, [btn, msg]),
     ]);
 
-    form.addEventListener("submit", (e) => {
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
       msg.classList.remove("is-visible", "success", "error");
-      if (userInput.value.trim() === USUARIO && passInput.value === CLAVE) {
+
+      const cfg = window.MQD_CONFIG;
+      if (!cfg.appsScriptUrl || !cfg.appsScriptUrl.trim()) {
+        msg.textContent = "El sitio todavía no tiene conectado el backend (Apps Script).";
+        msg.classList.add("is-visible", "error");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Ingresando…";
+      try {
+        // La validación real pasa en Apps Script (handleAdminLogin): acá
+        // solo mandamos lo que se tipeó, nunca comparamos contra nada
+        // hardcodeado en este archivo.
+        await submitToAppsScript({
+          tipo: "adminLogin",
+          usuario: userInput.value.trim(),
+          clave: passInput.value,
+        });
         setSession(true);
         onSuccess();
-      } else {
-        msg.textContent = "Usuario o contraseña incorrectos.";
+      } catch (err) {
+        console.error(err);
+        // Si el servidor respondió con un motivo concreto (usuario/clave
+        // incorrectos, o que falta configurar las Propiedades del
+        // script), lo mostramos tal cual — más útil que un genérico.
+        msg.textContent = /respuesta del servidor/i.test(err.message || "")
+          ? err.message
+          : "No pudimos verificar el usuario (revisá tu conexión) e intentá de nuevo.";
         msg.classList.add("is-visible", "error");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Ingresar";
       }
     });
 

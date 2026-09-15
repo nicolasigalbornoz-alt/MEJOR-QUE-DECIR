@@ -128,6 +128,9 @@ function handleDebug() {
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
+    if (data.tipo === "adminLogin") {
+      return jsonOut(handleAdminLogin(data));
+    }
     if (data.tipo === "acta") {
       return jsonOut(handleActaUpload(data));
     }
@@ -310,6 +313,31 @@ function handleResponses() {
   return jsonOutRaw(json);
 }
 
+// ---------- Login del panel de administración (admin.html) ----------
+
+// El usuario/contraseña NUNCA viven en el código del sitio (JS que le
+// llega a cualquier visitante) ni en este archivo (que también termina
+// público, en el repo de GitHub) — viven como "Propiedades del script",
+// que se cargan a mano una sola vez desde el editor de Apps Script
+// (ícono de engranaje "Configuración del proyecto" > "Propiedades del
+// script" > agregar ADMIN_USER y ADMIN_PASS) y nunca se comitean a
+// ningún lado. Así ni mirar el repo ni hacer "ver código fuente" del
+// sitio revela las credenciales reales.
+function handleAdminLogin(data) {
+  const props = PropertiesService.getScriptProperties();
+  const usuarioOk = props.getProperty("ADMIN_USER");
+  const claveOk = props.getProperty("ADMIN_PASS");
+  if (!usuarioOk || !claveOk) {
+    throw new Error("El panel de administración todavía no tiene usuario/contraseña configurados (faltan las Propiedades del script ADMIN_USER/ADMIN_PASS).");
+  }
+  const usuario = (data.usuario || "").toString().trim();
+  const clave = (data.clave || "").toString();
+  if (usuario === usuarioOk && clave === claveOk) {
+    return { ok: true };
+  }
+  return { ok: false, error: "Usuario o contraseña incorrectos." };
+}
+
 // ---------- Actas de comisión (subidas desde admin.html) ----------
 
 // Ejecutar UNA VEZ a mano desde el editor (▶ Ejecutar, elegir esta
@@ -320,9 +348,13 @@ function handleResponses() {
 // aparezca el cartel de autorización. Sin este paso, todas las subidas
 // de actas fallan en silencio (para quien sube, con "no pudimos subir
 // el archivo"; en la planilla, sin ningún error visible ni fila nueva).
-// No hace nada más que esto, no crea ni borra nada real.
+// De paso crea (si no existe todavía) la carpeta de Drive donde van a
+// quedar las actas, y deja su link en el registro de ejecución (menú
+// Ver > Registros de ejecución, o el panel que se abre solo después de
+// ejecutar) para saber exactamente dónde están guardadas.
 function autorizarPermisoDeDrive() {
-  DriveApp.getRootFolder().getName();
+  const folder = getActasFolder();
+  Logger.log("Carpeta de actas en Drive: " + folder.getUrl());
 }
 
 // Carpeta de Drive donde se guardan las actas — se crea sola la primera
