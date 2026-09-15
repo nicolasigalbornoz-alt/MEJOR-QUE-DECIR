@@ -46,7 +46,6 @@
     "Desafíos éticos y políticos de la IA: una mirada desde el sur global",
     "Seguridad",
     "Militancia territorial",
-    "Otra...",
   ];
   const SITUACION = [
     { value: 1, label: "Muy mala" },
@@ -70,7 +69,7 @@
     participa: "", agrupacion: "",
     situacionEscala: null, situacionTexto: "",
     problemas: [], problemaOtro: "", necesidades: [],
-    comision: "", comisionOtra: "",
+    comision: "",
     visionEscala: null, visionFrase: "",
   };
 
@@ -227,18 +226,10 @@
     form.appendChild(s6);
 
     // 7) Comisión de interés
-    const otraInput = el("input", { class: "input", type: "text", placeholder: "Contanos cuál", style: "margin-top:8px; display:none;" });
-    otraInput.addEventListener("input", () => { state.comisionOtra = otraInput.value.trim(); });
     const s7 = el("div", { class: "card" });
     s7.appendChild(stepHeader(7, "Comisión de interés", "Elegí una."));
-    const comisionGroup = radioGroup("comision", COMISIONES, (v) => {
-      state.comision = v;
-      const esOtra = /^otr[oa]/i.test(v);
-      otraInput.style.display = esOtra ? "block" : "none";
-      if (!esOtra) { otraInput.value = ""; state.comisionOtra = ""; }
-    });
+    const comisionGroup = radioGroup("comision", COMISIONES, (v) => { state.comision = v; });
     const f7 = fieldWrap(null, comisionGroup, { key: "comision", error: "Elegí una comisión." });
-    f7.appendChild(otraInput);
     s7.appendChild(f7);
     form.appendChild(s7);
 
@@ -258,13 +249,13 @@
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
-      handleSubmit(form, submitBtn, msg, counter5, counter6, otraInput, problemaOtroInput, fAgrupacion);
+      handleSubmit(form, submitBtn, msg, counter5, counter6, problemaOtroInput, fAgrupacion);
     });
 
     return form;
   }
 
-  async function handleSubmit(form, submitBtn, msg, counter5, counter6, otraInput, problemaOtroInput, fAgrupacion) {
+  async function handleSubmit(form, submitBtn, msg, counter5, counter6, problemaOtroInput, fAgrupacion) {
     msg.classList.remove("is-visible", "success", "error");
     const required = ["provincia", "localidad", "participa", "situacionEscala", "situacionTexto", "problemas", "necesidades", "comision", "visionEscala"];
     if (state.participa === "Sí") required.push("agrupacion");
@@ -289,7 +280,6 @@
     const payload = {
       ...state,
       problemas: state.problemas.map((p) => (/^otr[oa]/i.test(p) && state.problemaOtro ? `Otro: ${state.problemaOtro}` : p)),
-      comision: /^otr[oa]/i.test(state.comision) && state.comisionOtra ? `Otra: ${state.comisionOtra}` : state.comision,
     };
 
     submitBtn.disabled = true;
@@ -299,14 +289,13 @@
 
       form.reset();
       form.querySelectorAll(".option-card.is-checked").forEach((c) => c.classList.remove("is-checked"));
-      otraInput.style.display = "none";
       problemaOtroInput.style.display = "none";
       fAgrupacion.hidden = true;
       state.nombre = ""; state.provincia = ""; state.localidad = "";
       state.participa = ""; state.agrupacion = "";
       state.situacionEscala = null; state.situacionTexto = "";
       state.problemas.length = 0; state.problemaOtro = ""; state.necesidades.length = 0;
-      state.comision = ""; state.comisionOtra = "";
+      state.comision = "";
       state.visionEscala = null; state.visionFrase = "";
       counter5.textContent = `0/${MAX_MULTI} elegidos`;
       counter6.textContent = `0/${MAX_MULTI} elegidos`;
