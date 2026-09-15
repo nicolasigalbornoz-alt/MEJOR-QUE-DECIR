@@ -930,8 +930,14 @@ blockquote.testimonio footer {
 @keyframes shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
 
 @media print {
+  /* margin:0 en @page es lo que hace que Chrome deje de agregar su propio
+     encabezado/pie (fecha, título de la pestaña, URL) al imprimir o
+     guardar como PDF — esa franja sale del margen de la página, así que
+     sin margen no tiene dónde dibujarse. Reponemos el espacio a mano con
+     padding en el body, para que el contenido no quede pegado al borde. */
+  @page { margin: 0; }
   .site-header, .site-footer, .no-print { display: none !important; }
-  body { background: #fff; }
+  body { background: #fff; padding: 14mm 14mm; }
   .section { padding-block: 6px; }
   .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
 }
