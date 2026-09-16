@@ -325,7 +325,13 @@
       msg.scrollIntoView({ behavior: "smooth", block: "center" });
     } catch (err) {
       console.error(err);
-      msg.textContent = "No pudimos enviar tu respuesta (revisá tu conexión) e intentá de nuevo.";
+      // Si el servidor rechazó el envío por un motivo concreto (por
+      // ejemplo, nombre repetido), lo mostramos tal cual — más útil que
+      // el genérico de conexión, y es justo el caso donde reintentar no
+      // sirve de nada.
+      msg.textContent = /respuesta del servidor/i.test(err.message || "")
+        ? err.message
+        : "No pudimos enviar tu respuesta (revisá tu conexión) e intentá de nuevo.";
       msg.classList.add("is-visible", "error");
     } finally {
       submitBtn.disabled = false;
