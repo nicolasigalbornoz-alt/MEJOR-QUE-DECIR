@@ -380,16 +380,23 @@ function forzarRefrescoDeInforme() {
 // script" > agregar ADMIN_USER y ADMIN_PASS) y nunca se comitean a
 // ningún lado. Así ni mirar el repo ni hacer "ver código fuente" del
 // sitio revela las credenciales reales.
-function handleAdminLogin(data) {
+//
+// Se usa tanto para el login (handleAdminLogin) como para cada subida
+// de acta (handleActaUpload) — si solo se chequeara en el login, alguien
+// que mire el tráfico de red del navegador podría copiar el pedido de
+// subida y mandarlo directo, sin pasar nunca por el login.
+function verificarCredencialesAdmin(usuario, clave) {
   const props = PropertiesService.getScriptProperties();
   const usuarioOk = props.getProperty("ADMIN_USER");
   const claveOk = props.getProperty("ADMIN_PASS");
   if (!usuarioOk || !claveOk) {
     throw new Error("El panel de administración todavía no tiene usuario/contraseña configurados (faltan las Propiedades del script ADMIN_USER/ADMIN_PASS).");
   }
-  const usuario = (data.usuario || "").toString().trim();
-  const clave = (data.clave || "").toString();
-  if (usuario === usuarioOk && clave === claveOk) {
+  return (usuario || "").toString().trim() === usuarioOk && (clave || "").toString() === claveOk;
+}
+
+function handleAdminLogin(data) {
+  if (verificarCredencialesAdmin(data.usuario, data.clave)) {
     return { ok: true };
   }
   return { ok: false, error: "Usuario o contraseña incorrectos." };
@@ -423,6 +430,12 @@ function getActasFolder() {
 }
 
 function handleActaUpload(data) {
+  // Mismo chequeo que el login — ver comentario en verificarCredencialesAdmin
+  // sobre por qué hace falta acá también, no solo en handleAdminLogin.
+  if (!verificarCredencialesAdmin(data.usuario, data.clave)) {
+    throw new Error("Usuario o contraseña incorrectos.");
+  }
+
   const comision = (data.comision || "").toString().trim();
   const nombreArchivo = (data.archivoNombre || "acta.docx").toString().trim();
   const mimeType = (data.mimeType || "application/vnd.openxmlformats-officedocument.wordprocessingml.document").toString();
