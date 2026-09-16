@@ -18,7 +18,13 @@
   const K = window.MQD_FORMKIT;
   const { el, text, fieldWrap, submitToAppsScript } = K;
 
-  const SESSION_KEY = "mqd_admin_ok";
+  // Guarda el usuario/contraseña que la persona tipeó al loguearse (no un
+  // token): hace falta reenviarlos con cada subida de acta, porque el
+  // servidor los vuelve a chequear ahí también (ver comentario en
+  // verificarCredencialesAdmin de Code.gs) — si solo se guardara un
+  // booleano "logueado sí/no", alguien podría copiar el pedido de subida
+  // desde la red del navegador y mandarlo sin haber pasado nunca por acá.
+  const SESSION_KEY = "mqd_admin_session";
   // OJO: Apps Script recibe el archivo como base64 adentro de un POST que
   // además pasa por un redirect propio de Google (script.google.com ->
   // script.googleusercontent.com) — con archivos grandes ese camino se
@@ -39,10 +45,19 @@
   ];
 
   function getSession() {
-    try { return sessionStorage.getItem(SESSION_KEY) === "1"; } catch (err) { return false; }
+    try {
+      const raw = sessionStorage.getItem(SESSION_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return parsed && parsed.usuario && parsed.clave ? parsed : null;
+    } catch (err) {
+      return null;
+    }
   }
-  function setSession(v) {
-    try { v ? sessionStorage.setItem(SESSION_KEY, "1") : sessionStorage.removeItem(SESSION_KEY); } catch (err) { /* modo privado: sigue funcionando, solo no recuerda entre recargas */ }
+  function setSession(creds) {
+    try {
+      creds ? sessionStorage.setItem(SESSION_KEY, JSON.stringify(creds)) : sessionStorage.removeItem(SESSION_KEY);
+    } catch (err) { /* modo privado: sigue funcionando, solo no recuerda entre recargas */ }
   }
 
   function fileToBase64(file) {
@@ -108,12 +123,12 @@
         // La validación real pasa en Apps Script (handleAdminLogin): acá
         // solo mandamos lo que se tipeó, nunca comparamos contra nada
         // hardcodeado en este archivo.
-        await submitToAppsScript({
-          tipo: "adminLogin",
-          usuario: userInput.value.trim(),
-          clave: passInput.value,
-        });
-        setSession(true);
+        const usuario = userInput.value.trim();
+        const clave = passInput.value;
+        await submitToAppsScript({ tipo: "adminLogin", usuario, clave });
+        // Guardamos usuario/clave (no un booleano) para poder reenviarlos
+        // con cada subida de acta — ver comentario junto a SESSION_KEY.
+        setSession({ usuario, clave });
         onSuccess();
       } catch (err) {
         console.error(err);
@@ -134,7 +149,7 @@
     return card;
   }
 
-  function buildUpload(onLogout) {
+  function buildUpload(onLogout, session) {
     const card = el("div", { class: "card" });
     const head = el("div", { style: "display:flex; align-items:center; justify-content:space-between; gap:12px;" }, [
       el("h2", { class: "mt-0", style: "font-size:19px;" }, [text("Subir acta")]),
@@ -177,7 +192,7 @@
       el("div", { class: "survey-submit" }, [btn, msg]),
     ]);
 
-    logoutBtn.addEventListener("click", () => { setSession(false); onLogout(); });
+    logoutBtn.addEventListener("click", () => { setSession(null); onLogout(); });
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -212,6 +227,10 @@
           archivoNombre: file.name,
           mimeType: file.type || "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
           archivoBase64,
+          // El servidor vuelve a chequear esto en cada subida, no solo en
+          // el login — ver comentario junto a SESSION_KEY.
+          usuario: session.usuario,
+          clave: session.clave,
         });
         form.reset();
         sizeHint.style.display = "none";
@@ -255,11 +274,13 @@
       loginCard.appendChild(buildLogin(showUpload));
     }
     function showUpload() {
+      const session = getSession();
+      if (!session) { showLogin(); return; }
       loginCard.hidden = true;
       loginCard.innerHTML = "";
       uploadCard.hidden = false;
       uploadCard.innerHTML = "";
-      uploadCard.appendChild(buildUpload(showLogin));
+      uploadCard.appendChild(buildUpload(showLogin, session));
     }
 
     if (getSession()) showUpload();
