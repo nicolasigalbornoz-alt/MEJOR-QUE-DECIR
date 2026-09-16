@@ -59,6 +59,7 @@ const RESPUESTA_HEADERS = [
   "Comisión de interés",
   "Visión país (-2 a 2)",
   "Visión (frase)",
+  "Taller elegido",
 ];
 
 // Cuánto se guarda cada cosa en CacheService antes de releer la planilla.
@@ -251,6 +252,7 @@ function appendResponse(data) {
     (data.comision || "").toString().trim(),
     data.visionEscala != null ? data.visionEscala : "",
     (data.visionFrase || "").toString().trim(),
+    (data.taller || "").toString().trim(),
   ]);
   bumpPendingCountAndMaybeRefresh();
 }
@@ -404,6 +406,136 @@ function handleActas() {
     // lista de actas muy larga para cachear: seguimos sin cache.
   }
   return jsonOutRaw(json);
+}
+
+// ---------- Panel de cupos (comisiones y talleres) ----------
+
+// Cupos indicados por el equipo organizador: 135 por comisión, 115 por
+// taller. Las listas de nombres tienen que coincidir EXACTO con las que
+// arma assets/js/encuesta.js (COMISIONES / TALLERES) — el conteo cuenta
+// contra estos nombres, así que si cambia uno hay que cambiar los dos
+// lados y volver a ejecutar crearPanelDeCupos().
+const CUPOS_SHEET_NAME = "Panel de cupos";
+const CUPO_POR_COMISION = 135;
+const CUPO_POR_TALLER = 115;
+const COMISIONES_CUPO = [
+  "Trabajo y producción",
+  "Modelo de desarrollo y federalismo",
+  "Soberanía, defensa e integración territorial",
+  "Desafíos éticos y políticos de la IA: una mirada desde el sur global",
+  "Seguridad",
+  "Militancia territorial",
+];
+const TALLERES_CUPO = [
+  "Pensar en la Argentina Bicontinental: Malvinas, Antártida y Atlántico Sur",
+  "Gestión Municipal",
+  "Política legislativa",
+  "Comunicación política y redes",
+  "Historia del movimiento peronista",
+  "Seguridad",
+  "Economía",
+];
+
+function numeroAColumna(n) {
+  let s = "";
+  while (n > 0) {
+    const resto = (n - 1) % 26;
+    s = String.fromCharCode(65 + resto) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
+}
+
+// Ejecutar UNA VEZ a mano desde el editor (▶ Ejecutar, elegir esta
+// función arriba) para crear la pestaña "Panel de cupos". Se completa
+// sola con fórmulas que leen "Respuestas encuesta" — cada respuesta
+// nueva de la encuesta recalcula el conteo automáticamente, sin que
+// haga falta tocar nada más.
+//
+// OJO: si "Respuestas encuesta" ya existía de antes con el esquema
+// viejo (sin la columna "Taller elegido"), primero hay que BORRAR esa
+// pestaña entera (clic derecho en su nombre → Eliminar) para que se
+// vuelva a crear sola con el esquema actual — si no, esta función tira
+// un error avisando justamente eso.
+//
+// Se puede volver a ejecutar cuando quieras (por ejemplo si cambia
+// algún cupo o la lista de comisiones/talleres): reconstruye la
+// pestaña "Panel de cupos" entera, nunca toca "Respuestas encuesta".
+function crearPanelDeCupos() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const respSheet = getOrCreateResponseSheet();
+  const respHeaders = respSheet.getRange(1, 1, 1, respSheet.getLastColumn()).getValues()[0];
+  const colComisionIdx = respHeaders.indexOf("Comisión de interés");
+  const colTallerIdx = respHeaders.indexOf("Taller elegido");
+  if (colComisionIdx === -1 || colTallerIdx === -1) {
+    throw new Error('La hoja "Respuestas encuesta" tiene un esquema viejo (sin "Taller elegido"). Borrá esa pestaña entera y volvé a ejecutar esta función.');
+  }
+  const colComision = numeroAColumna(colComisionIdx + 1);
+  const colTaller = numeroAColumna(colTallerIdx + 1);
+
+  const existente = ss.getSheetByName(CUPOS_SHEET_NAME);
+  if (existente) ss.deleteSheet(existente);
+  const sheet = ss.insertSheet(CUPOS_SHEET_NAME);
+
+  sheet.getRange("A1").setValue("Panel de cupos — se completa solo con las respuestas de la encuesta");
+  sheet.getRange("A1:F1").merge();
+  sheet.getRange("A1").setFontWeight("bold").setFontSize(13);
+
+  const headerRow = 3;
+  sheet.getRange(headerRow, 1, 1, 6).setValues([["Tipo", "Nombre", "Cupo", "Confirmados", "Disponibles", "% ocupado"]]);
+  sheet.getRange(headerRow, 1, 1, 6).setFontWeight("bold").setBackground("#5b3f86").setFontColor("#ffffff");
+
+  let row = headerRow + 1;
+
+  COMISIONES_CUPO.forEach((nombre) => {
+    sheet.getRange(row, 1).setValue("Comisión");
+    sheet.getRange(row, 2).setValue(nombre);
+    sheet.getRange(row, 3).setValue(CUPO_POR_COMISION);
+    sheet.getRange(row, 4).setFormula(`=COUNTIF('${RESPUESTAS_SHEET_NAME}'!${colComision}:${colComision},$B${row})`);
+    sheet.getRange(row, 5).setFormula(`=C${row}-D${row}`);
+    const pct = sheet.getRange(row, 6);
+    pct.setFormula(`=IF(C${row}=0,0,D${row}/C${row})`);
+    pct.setNumberFormat("0.0%");
+    row++;
+  });
+
+  row++; // fila separadora entre comisiones y talleres
+
+  TALLERES_CUPO.forEach((nombre) => {
+    sheet.getRange(row, 1).setValue("Taller");
+    sheet.getRange(row, 2).setValue(nombre);
+    sheet.getRange(row, 3).setValue(CUPO_POR_TALLER);
+    sheet.getRange(row, 4).setFormula(`=COUNTIF('${RESPUESTAS_SHEET_NAME}'!${colTaller}:${colTaller},$B${row})`);
+    sheet.getRange(row, 5).setFormula(`=C${row}-D${row}`);
+    const pct = sheet.getRange(row, 6);
+    pct.setFormula(`=IF(C${row}=0,0,D${row}/C${row})`);
+    pct.setNumberFormat("0.0%");
+    row++;
+  });
+
+  sheet.setColumnWidth(1, 90);
+  sheet.setColumnWidth(2, 340);
+  sheet.setColumnWidths(3, 4, 90);
+
+  // Formato condicional en "Disponibles": rojo si se llegó al cupo,
+  // amarillo si quedan 10 lugares o menos. El orden importa: la regla de
+  // rojo va primero para que gane sobre la de amarillo en 0.
+  const firstDataRow = headerRow + 1;
+  const lastDataRow = row - 1;
+  const dispRange = sheet.getRange(firstDataRow, 5, lastDataRow - firstDataRow + 1, 1);
+  sheet.setConditionalFormatRules([
+    SpreadsheetApp.newConditionalFormatRule()
+      .whenNumberLessThanOrEqualTo(0)
+      .setBackground("#f4c7c3").setFontColor("#990000")
+      .setRanges([dispRange]).build(),
+    SpreadsheetApp.newConditionalFormatRule()
+      .whenNumberLessThanOrEqualTo(10)
+      .setBackground("#fff2cc").setFontColor("#7f6000")
+      .setRanges([dispRange]).build(),
+  ]);
+  sheet.setFrozenRows(headerRow);
+
+  Logger.log("Panel de cupos creado/actualizado.");
 }
 
 function jsonOut(obj) {
