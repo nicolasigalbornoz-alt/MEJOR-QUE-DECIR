@@ -397,6 +397,15 @@ button { font-family: inherit; }
 .grid-2 { display: grid; grid-template-columns: 1fr; gap: 12px; }
 @media (min-width: 560px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
 @media (min-width: 900px) { .grid-2 { grid-template-columns: repeat(3, 1fr); } }
+/* La regla ".card + .card" de más abajo agrega margin-top a cualquier
+   .card precedida por otra .card — pensada para listas de tarjetas en
+   una sola columna. Acá adentro pisaba el "gap" del grid: como es un
+   selector de hermano adyacente en el DOM (no por fila visual), todas
+   las tarjetas de la grilla salvo la primera terminaban con 12px extra
+   arriba, corridas hacia abajo dentro de su celda — la primera tarjeta
+   de cada fila se veía más alta que el resto. El grid ya separa todo
+   con "gap", así que acá no hace falta ese margen aparte. */
+.grid-2 > .card + .card { margin-top: 0; }
 
 .feature {
   display: flex;
