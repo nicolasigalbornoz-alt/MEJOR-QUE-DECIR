@@ -16,6 +16,9 @@
  *     desde el panel de administración (admin.html), las guarda en una
  *     carpeta de Drive y registra el link en la hoja "Actas" para que
  *     la síntesis las muestre como parte del informe final.
+ *  5) No deja mandar la encuesta dos veces con el mismo nombre (ver
+ *     nombreYaRespondio/appendResponse) — candado liviano por texto
+ *     libre, no un identificador único real.
  *
  * Rendimiento: tanto el padrón como las respuestas se guardan un rato en
  * CacheService (memoria compartida entre TODAS las visitas al sitio, no
@@ -236,24 +239,64 @@ function getOrCreateResponseSheet() {
   return getOrCreateSheet(RESPUESTAS_SHEET_NAME, RESPUESTA_HEADERS);
 }
 
-function appendResponse(data) {
+// Antes de guardar, se fija si ese nombre (normalizado: sin mayúsculas,
+// sin acentos, sin espacios de más) ya respondió antes — así evitamos que
+// la misma persona quede cargada dos veces sin querer (por ejemplo si
+// manda el formulario, no ve la confirmación, y lo vuelve a mandar).
+//
+// OJO — límite real de esto: compara texto libre (el nombre que la
+// persona tipeó), no un DNI ni ningún identificador único. Es un candado
+// liviano, igual que el resto de las protecciones del sitio: frena el
+// caso normal (mandarlo de nuevo sin querer), no a alguien que a propósito
+// escriba su nombre distinto la segunda vez. Tampoco distingue homónimos
+// reales (dos personas distintas con el mismo nombre y apellido) — en ese
+// caso la segunda persona real va a ver el error igual y va a tener que
+// avisarle al equipo organizador.
+function nombreYaRespondio(nombreNormalizado) {
   const sheet = getOrCreateResponseSheet();
-  sheet.appendRow([
-    new Date(),
-    (data.nombre || "").toString().trim(),
-    (data.provincia || "").toString().trim(),
-    (data.localidad || "").toString().trim(),
-    (data.participa || "").toString().trim(),
-    (data.agrupacion || "").toString().trim(),
-    data.situacionEscala || "",
-    (data.situacionTexto || "").toString().trim(),
-    Array.isArray(data.problemas) ? data.problemas.join("; ") : "",
-    Array.isArray(data.necesidades) ? data.necesidades.join("; ") : "",
-    (data.comision || "").toString().trim(),
-    data.visionEscala != null ? data.visionEscala : "",
-    (data.visionFrase || "").toString().trim(),
-    (data.taller || "").toString().trim(),
-  ]);
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return false;
+  const nombres = sheet.getRange(2, 2, lastRow - 1, 1).getValues(); // columna B = Nombre
+  return nombres.some((r) => normalizeText((r[0] || "").toString()) === nombreNormalizado);
+}
+
+function appendResponse(data) {
+  const nombre = (data.nombre || "").toString().trim();
+  const nombreNorm = normalizeText(nombre);
+
+  // Lock alrededor de "revisar + guardar" para que dos envíos casi
+  // simultáneos con el mismo nombre no se crucen y los dos pasen el
+  // chequeo antes de que ninguno haya guardado todavía.
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+  } catch (err) {
+    throw new Error("El servidor está ocupado guardando otra respuesta — probá de nuevo en unos segundos.");
+  }
+  try {
+    if (nombreNorm && nombreYaRespondio(nombreNorm)) {
+      throw new Error("Ya registramos una respuesta con este nombre. Si creés que es un error (por ejemplo, dos personas con el mismo nombre), avisale al equipo organizador.");
+    }
+    const sheet = getOrCreateResponseSheet();
+    sheet.appendRow([
+      new Date(),
+      nombre,
+      (data.provincia || "").toString().trim(),
+      (data.localidad || "").toString().trim(),
+      (data.participa || "").toString().trim(),
+      (data.agrupacion || "").toString().trim(),
+      data.situacionEscala || "",
+      (data.situacionTexto || "").toString().trim(),
+      Array.isArray(data.problemas) ? data.problemas.join("; ") : "",
+      Array.isArray(data.necesidades) ? data.necesidades.join("; ") : "",
+      (data.comision || "").toString().trim(),
+      data.visionEscala != null ? data.visionEscala : "",
+      (data.visionFrase || "").toString().trim(),
+      (data.taller || "").toString().trim(),
+    ]);
+  } finally {
+    lock.releaseLock();
+  }
   bumpPendingCountAndMaybeRefresh();
 }
 
