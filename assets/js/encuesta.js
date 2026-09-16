@@ -47,6 +47,19 @@
     "Seguridad",
     "Militancia territorial",
   ];
+  // Paneles/talleres del encuentro — cupo 115 cada uno (135 por comisión).
+  // Tiene que coincidir con la lista que arma crearPanelDeCupos() en
+  // apps-script/Code.gs, así el conteo de cupos cuenta contra los nombres
+  // correctos.
+  const TALLERES = [
+    "Pensar en la Argentina Bicontinental: Malvinas, Antártida y Atlántico Sur",
+    "Gestión Municipal",
+    "Política legislativa",
+    "Comunicación política y redes",
+    "Historia del movimiento peronista",
+    "Seguridad",
+    "Economía",
+  ];
   const SITUACION = [
     { value: 1, label: "Muy mala" },
     { value: 2, label: "Mala" },
@@ -69,7 +82,7 @@
     participa: "", agrupacion: "",
     situacionEscala: null, situacionTexto: "",
     problemas: [], problemaOtro: "", necesidades: [],
-    comision: "",
+    comision: "", taller: "",
     visionEscala: null, visionFrase: "",
   };
 
@@ -233,14 +246,22 @@
     s7.appendChild(f7);
     form.appendChild(s7);
 
-    // 8) Visión país
+    // 8) Panel de interés
+    const s8 = el("div", { class: "card" });
+    s8.appendChild(stepHeader(8, "Panel de interés", "Elegí uno."));
+    const tallerGroup = radioGroup("taller", TALLERES, (v) => { state.taller = v; });
+    const f8 = fieldWrap(null, tallerGroup, { key: "taller", error: "Elegí un panel." });
+    s8.appendChild(f8);
+    form.appendChild(s8);
+
+    // 9) Visión país
     const visionFrase = el("input", { class: "input", type: "text", id: "fVisionFrase", placeholder: "En una frase (opcional)" });
     visionFrase.addEventListener("input", () => { state.visionFrase = visionFrase.value.trim(); });
-    const s8 = el("div", { class: "card" });
-    s8.appendChild(stepHeader(8, "Visión del país"));
-    s8.appendChild(fieldWrap("¿Qué tan optimista sos sobre el futuro del país?", radioGroup("vision", VISION, (v) => { state.visionEscala = v; }), { key: "visionEscala" }));
-    s8.appendChild(fieldWrap("¿Qué país te gustaría construir? (opcional)", visionFrase));
-    form.appendChild(s8);
+    const s9 = el("div", { class: "card" });
+    s9.appendChild(stepHeader(9, "Visión del país"));
+    s9.appendChild(fieldWrap("¿Qué tan optimista sos sobre el futuro del país?", radioGroup("vision", VISION, (v) => { state.visionEscala = v; }), { key: "visionEscala" }));
+    s9.appendChild(fieldWrap("¿Qué país te gustaría construir? (opcional)", visionFrase));
+    form.appendChild(s9);
 
     // Enviar
     const submitBtn = el("button", { class: "btn btn-primary btn-block", type: "submit" }, [text("Enviar respuesta")]);
@@ -257,7 +278,7 @@
 
   async function handleSubmit(form, submitBtn, msg, counter5, counter6, problemaOtroInput, fAgrupacion) {
     msg.classList.remove("is-visible", "success", "error");
-    const required = ["provincia", "localidad", "participa", "situacionEscala", "situacionTexto", "problemas", "necesidades", "comision", "visionEscala"];
+    const required = ["provincia", "localidad", "participa", "situacionEscala", "situacionTexto", "problemas", "necesidades", "comision", "taller", "visionEscala"];
     if (state.participa === "Sí") required.push("agrupacion");
     let firstInvalid = validateRequired(form, state, required);
     if (!state.nombre) {
@@ -295,7 +316,7 @@
       state.participa = ""; state.agrupacion = "";
       state.situacionEscala = null; state.situacionTexto = "";
       state.problemas.length = 0; state.problemaOtro = ""; state.necesidades.length = 0;
-      state.comision = "";
+      state.comision = ""; state.taller = "";
       state.visionEscala = null; state.visionFrase = "";
       counter5.textContent = `0/${MAX_MULTI} elegidos`;
       counter6.textContent = `0/${MAX_MULTI} elegidos`;

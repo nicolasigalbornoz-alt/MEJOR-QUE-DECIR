@@ -167,6 +167,40 @@ quien lo lee). Pero a diferencia de antes, ni mirando el repo público
 en GitHub ni con "ver código fuente" del sitio se puede ver el usuario
 o la contraseña reales.
 
+## Panel de cupos (comisiones y talleres)
+
+La encuesta ahora también pregunta a qué **panel/taller** le interesaría
+participar a cada persona (selección única, igual que "Comisión de
+interés"). La pestaña **"Panel de cupos"** de la planilla muestra en
+vivo cuántos se anotaron en cada comisión (cupo 135) y cada taller
+(cupo 115) — se completa sola con fórmulas que leen "Respuestas
+encuesta", así que no hace falta tocar nada cada vez que llega una
+respuesta nueva.
+
+Para crearla (una sola vez):
+
+1. Pegá el `Code.gs` actualizado (como en el paso 2 de arriba).
+2. **Importante:** si la pestaña "Respuestas encuesta" ya existía de
+   antes de este cambio, tiene el esquema viejo (sin la columna "Taller
+   elegido") — borrala entera (clic derecho en su nombre, abajo →
+   Eliminar). No hay drama si no tiene respuestas reales todavía: se
+   vuelve a crear sola, con el esquema correcto, en la próxima consulta
+   o respuesta.
+3. En el editor de Apps Script, elegí **`crearPanelDeCupos`** en el
+   desplegable de funciones (al lado de "Depurar") y tocá **▶
+   Ejecutar**.
+4. Volvé a implementar: **Implementar → Administrar implementaciones →
+   ✏️ → Versión: Nueva versión → Implementar**.
+
+Se puede volver a ejecutar `crearPanelDeCupos` cuando quieras (por
+ejemplo si cambia algún cupo, o se agrega/saca un taller) — reconstruye
+la pestaña "Panel de cupos" entera, sin tocar nunca "Respuestas
+encuesta". Si cambia la lista de comisiones o talleres, hay que
+actualizarla en **dos lugares que tienen que coincidir**:
+`assets/js/encuesta.js` (arrays `COMISIONES` / `TALLERES`) y
+`apps-script/Code.gs` (arrays `COMISIONES_CUPO` / `TALLERES_CUPO`,
+cerca de `crearPanelDeCupos`).
+
 ## Si el autocompletado no encuentra a nadie
 
 Abrí en el navegador `TU_URL_/exec?action=debug`. Te muestra a qué
