@@ -315,6 +315,18 @@ function handleResponses() {
   return jsonOutRaw(json);
 }
 
+// Ejecutar a mano desde el editor (▶ Ejecutar) cuando quieras que
+// ?action=responses recalcule YA en vez de esperar el refresco automático
+// (cada 10 respuestas nuevas o 20 minutos, lo que pase primero — ver
+// bumpPendingCountAndMaybeRefresh). Sirve sobre todo para probar que una
+// respuesta de prueba ya se ve en el mapa/síntesis sin tener que esperar.
+// No hace falta para el uso normal del sitio ni requiere reimplementar.
+function forzarRefrescoDeInforme() {
+  CacheService.getScriptCache().remove(RESPONSES_CACHE_KEY);
+  PropertiesService.getScriptProperties().setProperty(PENDING_COUNT_KEY, "0");
+  Logger.log("Listo: el próximo ?action=responses va a recalcular de cero.");
+}
+
 // ---------- Login del panel de administración (admin.html) ----------
 
 // El usuario/contraseña NUNCA viven en el código del sitio (JS que le
