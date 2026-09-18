@@ -114,42 +114,15 @@
   // Borde exterior de la grilla (fila/columna 0 o 2 hacia afuera) siempre
   // recto — como si esta grilla de comisiones fuera, a su vez, una sola
   // pieza rectangular de un rompecabezas más grande (el del Encuentro).
+  // El armado real de cada borde (tab/muesca/recto) lo hace
+  // window.MQD_PUZZLE, compartido con la grilla de "Qué preguntamos" de
+  // index.html — ver assets/js/puzzle.js.
   function edgesFor(r, c) {
-    return {
-      top: r === 0 ? "flat" : JOINT_V[c][r - 1] ? "notch" : "tab",
-      bottom: r === 2 ? "flat" : JOINT_V[c][r] ? "tab" : "notch",
-      left: c === 0 ? "flat" : JOINT_H[r][c - 1] ? "notch" : "tab",
-      right: c === 2 ? "flat" : JOINT_H[r][c] ? "tab" : "notch",
-    };
-  }
-
-  // Un lado "flat" es una línea recta (borde exterior). Uno con tab/notch
-  // sale del cuadrado base (0..100) hacia afuera (tab) o se mete hacia
-  // adentro (notch) en el tercio central del lado — el propio SVG tiene
-  // overflow:visible (ver styles.css) así que la parte de la tab que
-  // sobresale del cuadrado de 100x100 se sigue viendo, pisando visualmente
-  // la celda vecina (que no tiene gap, ver .puzzle-grid) y armando el
-  // encastre.
-  function puzzlePiecePath(edges) {
-    const seg = (kind, mid1, mid2, corner) => {
-      if (kind === "flat") return `L${corner}`;
-      const sweep = kind === "tab" ? 1 : 0;
-      return `L${mid1} A15,15 0 0,${sweep} ${mid2} L${corner}`;
-    };
-    return [
-      "M0,0",
-      seg(edges.top, "35,0", "65,0", "100,0"),
-      seg(edges.right, "100,35", "100,65", "100,100"),
-      seg(edges.bottom, "65,100", "35,100", "0,100"),
-      seg(edges.left, "0,65", "0,35", "0,0"),
-      "Z",
-    ].join(" ");
+    return window.MQD_PUZZLE.edgesFor(r, c, 3, 3, (row, j) => JOINT_H[row][j], (col, k) => JOINT_V[col][k]);
   }
 
   function puzzlePieceSvg(color, edges) {
-    return `<svg viewBox="0 0 100 100" aria-hidden="true">
-      <path d="${puzzlePiecePath(edges)}" fill="${color}"></path>
-    </svg>`;
+    return window.MQD_PUZZLE.svg(color, edges);
   }
 
   function buildPuzzleGrid(el, data) {
