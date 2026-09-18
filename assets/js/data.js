@@ -89,7 +89,8 @@
     // 6 Situación (1-5), 7 Situación/problemática (texto), 8 Problemas,
     // 9 Necesidades, 10 Comisión de interés, 11 Visión país (-2 a 2),
     // 12 Visión (frase), 13 Taller elegido, 14 Comentario sobre la
-    // comisión elegida, 15 Comentario sobre el panel/taller elegido.
+    // comisión elegida, 15 Comentario sobre el panel/taller elegido,
+    // 16 Problemática específica del territorio.
     const rows = Array.isArray(json && json.rows) ? json.rows : [];
     const out = [];
     for (const r of rows) {
@@ -117,6 +118,7 @@
         taller: (r[13] || "").toString().trim(),
         comisionComentario: (r[14] || "").toString().trim(),
         tallerComentario: (r[15] || "").toString().trim(),
+        problematicaTerritorio: (r[16] || "").toString().trim(),
       });
     }
     return out;
@@ -180,7 +182,7 @@
       row.problemas.forEach((p) => { bump(b.problemas, p); bump(nacProblemas, p); });
       row.necesidades.forEach((n) => { bump(b.necesidades, n); bump(nacNecesidades, n); });
       bump(nacParticipa, row.participa);
-      const quote = row.situacionTexto || row.visionFrase;
+      const quote = row.problematicaTerritorio || row.situacionTexto || row.visionFrase;
       if (quote && quote.length > 3 && b.quotes.length < 8) {
         b.quotes.push({ text: quote, localidad: row.localidad });
       }
