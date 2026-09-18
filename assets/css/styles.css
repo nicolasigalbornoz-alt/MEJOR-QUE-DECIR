@@ -183,6 +183,14 @@ button { font-family: inherit; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* En celulares muy angostos (~320-360px) ya no entra "MEJOR QUE DECIR"
+   completo junto con el selector de tema y el botón de menú — se
+   esconde el texto y queda solo el isotipo de Jóvenes FR, que igual
+   identifica el sitio. A partir de 375px (iPhone SE en adelante) entra
+   sin problema, así que se muestra entero. */
+@media (max-width: 374px) {
+  .brand__title { display: none; }
+}
 :root[data-theme="dark"] .brand__title { color: var(--sky); }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .brand__title { color: var(--sky); }
@@ -202,6 +210,34 @@ button { font-family: inherit; }
   cursor: pointer;
 }
 .nav-toggle svg { width: 20px; height: 20px; stroke: var(--navy); }
+
+/* Selector de modo claro/oscuro — visible en todos los anchos (a
+   diferencia de .nav-toggle, que en desktop se esconde porque ahí el
+   menú ya se ve entero). Un solo botón: muestra el sol cuando el modo
+   activo es claro (tocarlo pasa a oscuro) y la luna cuando es oscuro
+   (tocarlo vuelve a claro) — la lógica de cuál mostrar vive en nav.js,
+   acá solo el look. */
+.theme-toggle {
+  appearance: none;
+  border: none;
+  background: var(--surface-2);
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  cursor: pointer;
+}
+.theme-toggle svg { width: 20px; height: 20px; stroke: var(--navy); }
+:root[data-theme="dark"] .theme-toggle svg { stroke: var(--sky); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-toggle svg { stroke: var(--sky); }
+}
+.theme-toggle__moon { display: none; }
+.theme-toggle.is-dark .theme-toggle__sun { display: none; }
+.theme-toggle.is-dark .theme-toggle__moon { display: block; }
 
 .site-nav {
   position: fixed;
@@ -239,6 +275,12 @@ button { font-family: inherit; }
 
 @media (min-width: 760px) {
   .nav-toggle { display: none; }
+  /* El header usa su propio ancho máximo, más ancho que el contenido
+     (--max-w, que recién pasa a 880px a partir de 1024px) — a partir de
+     acá ya se ve la navegación entera (sin hamburguesa) y agregar este
+     botón contra los 720px angostos del contenido dejaba todo muy
+     justo: "MEJOR QUE DECIR" se cortaba con puntos suspensivos. */
+  .site-header__bar { max-width: var(--max-w-wide); gap: 10px; }
   .site-nav {
     position: static;
     box-shadow: none;
