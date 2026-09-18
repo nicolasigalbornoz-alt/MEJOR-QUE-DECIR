@@ -65,6 +65,7 @@ const RESPUESTA_HEADERS = [
   "Taller elegido",
   "Comentario sobre la comisión elegida",
   "Comentario sobre el panel/taller elegido",
+  "Problemática específica del territorio",
 ];
 
 // Cuánto se guarda cada cosa en CacheService antes de releer la planilla.
@@ -297,6 +298,7 @@ function appendResponse(data) {
       (data.taller || "").toString().trim(),
       (data.comisionComentario || "").toString().trim(),
       (data.tallerComentario || "").toString().trim(),
+      (data.problematicaTerritorio || "").toString().trim(),
     ]);
   } finally {
     lock.releaseLock();

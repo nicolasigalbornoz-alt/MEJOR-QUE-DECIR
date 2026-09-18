@@ -214,14 +214,16 @@ una coma, esa comisión va a aparecer sin datos aunque haya respuestas
 cargadas.
 
 La encuesta también guarda, de forma opcional, un comentario sobre la
-comisión y sobre el panel/taller elegido (columnas "Comentario sobre la
-comisión elegida" y "Comentario sobre el panel/taller elegido", al
-final de `RESPUESTA_HEADERS`). Si tu pestaña "Respuestas encuesta" ya
-existía de antes de este cambio, no tiene esas dos columnas en el
-encabezado — igual que con cualquier cambio de esquema, borrala entera
-(clic derecho en su nombre → Eliminar) después de pegar el `Code.gs`
-actualizado, así se vuelve a crear sola con el esquema completo. No hay
-drama si no tiene respuestas reales todavía.
+comisión y sobre el panel/taller elegido, y una problemática puntual
+del territorio de quien responde (columnas "Comentario sobre la
+comisión elegida", "Comentario sobre el panel/taller elegido" y
+"Problemática específica del territorio", al final de
+`RESPUESTA_HEADERS`). Si tu pestaña "Respuestas encuesta" ya existía de
+antes de estos cambios, no tiene esas columnas en el encabezado — igual
+que con cualquier cambio de esquema, borrala entera (clic derecho en su
+nombre → Eliminar) después de pegar el `Code.gs` actualizado, así se
+vuelve a crear sola con el esquema completo. No hay drama si no tiene
+respuestas reales todavía.
 
 ## Si el autocompletado no encuentra a nadie
 

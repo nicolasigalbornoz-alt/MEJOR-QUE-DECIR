@@ -66,6 +66,7 @@
     nombre: "", provincia: "", localidad: "",
     participa: "", agrupacion: "",
     situacionEscala: null, situacionTexto: "",
+    problematicaTerritorio: "",
     problemas: [], problemaOtro: "", necesidades: [],
     comision: "", comisionComentario: "",
     taller: "", tallerComentario: "",
@@ -200,33 +201,42 @@
     s4.appendChild(fieldWrap("Contanos más", situacionTexto, { key: "situacionTexto" }));
     form.appendChild(s4);
 
-    // 5) Problemas
-    const problemaOtroInput = el("input", { class: "input", type: "text", placeholder: "Contanos cuál", style: "margin-top:8px; display:none;" });
-    problemaOtroInput.addEventListener("input", () => { state.problemaOtro = problemaOtroInput.value.trim(); });
+    // 5) Problemática puntual del territorio
+    const problematicaTerritorio = el("textarea", { class: "textarea", id: "fProblematicaTerritorio", placeholder: "Por ejemplo: no hay transporte nocturno, faltan centros de salud, no hay espacios verdes..." });
+    problematicaTerritorio.addEventListener("input", () => { state.problematicaTerritorio = problematicaTerritorio.value.trim(); });
     const s5 = el("div", { class: "card" });
-    s5.appendChild(stepHeader(5, "Problemas de la juventud", `Elegí hasta ${MAX_MULTI} en tu lugar.`));
-    const counter5 = el("div", { class: "field-counter" });
-    const problemasGroup = checkboxGroup("problemas", PROBLEMAS, state.problemas, {
-      max: MAX_MULTI, counterEl: counter5,
-      onOther: (checked) => { problemaOtroInput.style.display = checked ? "block" : "none"; if (!checked) { problemaOtroInput.value = ""; state.problemaOtro = ""; } },
-    });
-    const f5 = fieldWrap(null, problemasGroup, { key: "problemas", error: "Elegí al menos una opción." });
-    f5.appendChild(counter5);
-    f5.appendChild(problemaOtroInput);
-    s5.appendChild(f5);
+    s5.appendChild(stepHeader(5, "Una problemática de tu territorio", "Opcional."));
+    s5.appendChild(fieldWrap("Comentar una problemática específica de tu territorio", problematicaTerritorio, { key: "problematicaTerritorio" }));
     form.appendChild(s5);
 
-    // 6) Necesidades
+    // 6) Problemas
+    const problemaOtroInput = el("input", { class: "input", type: "text", placeholder: "Contanos cuál", style: "margin-top:8px; display:none;" });
+    problemaOtroInput.addEventListener("input", () => { state.problemaOtro = problemaOtroInput.value.trim(); });
     const s6 = el("div", { class: "card" });
-    s6.appendChild(stepHeader(6, "¿Qué necesitan los y las jóvenes?", `Elegí hasta ${MAX_MULTI}.`));
-    const counter6 = el("div", { class: "field-counter" });
-    s6.appendChild(fieldWrap(null, checkboxGroup("necesidades", NECESIDADES, state.necesidades, { max: MAX_MULTI, counterEl: counter6 }), { key: "necesidades", error: "Elegí al menos una opción." }));
-    s6.querySelector(".field").appendChild(counter6);
+    s6.appendChild(stepHeader(6, "Problemas de la juventud", `Elegí hasta ${MAX_MULTI} en tu lugar.`));
+    const counterProblemas = el("div", { class: "field-counter" });
+    const problemasGroup = checkboxGroup("problemas", PROBLEMAS, state.problemas, {
+      max: MAX_MULTI, counterEl: counterProblemas,
+      onOther: (checked) => { problemaOtroInput.style.display = checked ? "block" : "none"; if (!checked) { problemaOtroInput.value = ""; state.problemaOtro = ""; } },
+    });
+    const f6 = fieldWrap(null, problemasGroup, { key: "problemas", error: "Elegí al menos una opción." });
+    f6.appendChild(counterProblemas);
+    f6.appendChild(problemaOtroInput);
+    s6.appendChild(f6);
     form.appendChild(s6);
 
-    // 7) Comisión de interés
+    // 7) Necesidades
     const s7 = el("div", { class: "card" });
-    s7.appendChild(stepHeader(7, "Comisión de interés", "Elegí una."));
+    s7.appendChild(stepHeader(7, "¿Qué necesitan los y las jóvenes?", `Elegí hasta ${MAX_MULTI}.`));
+    const counterNecesidades = el("div", { class: "field-counter" });
+    const f7 = fieldWrap(null, checkboxGroup("necesidades", NECESIDADES, state.necesidades, { max: MAX_MULTI, counterEl: counterNecesidades }), { key: "necesidades", error: "Elegí al menos una opción." });
+    f7.appendChild(counterNecesidades);
+    s7.appendChild(f7);
+    form.appendChild(s7);
+
+    // 8) Comisión de interés
+    const s8 = el("div", { class: "card" });
+    s8.appendChild(stepHeader(8, "Comisión de interés", "Elegí una."));
     const comisionComentarioLabel = el("label", { class: "field-label", style: "margin-top:16px;" }, [text("¿Qué te gustaría que se trabaje en esa comisión? (opcional)")]);
     const comisionComentarioInput = el("textarea", { class: "textarea", placeholder: "Elegí primero una comisión arriba" });
     comisionComentarioInput.addEventListener("input", () => { state.comisionComentario = comisionComentarioInput.value.trim(); });
@@ -235,15 +245,15 @@
       comisionComentarioLabel.firstChild.textContent = `¿Qué te gustaría que se trabaje en "${v}"? (opcional)`;
       comisionComentarioInput.placeholder = "Contanos en pocas palabras";
     });
-    const f7 = fieldWrap(null, comisionGroup, { key: "comision", error: "Elegí una comisión." });
-    f7.appendChild(comisionComentarioLabel);
-    f7.appendChild(comisionComentarioInput);
-    s7.appendChild(f7);
-    form.appendChild(s7);
+    const f8b = fieldWrap(null, comisionGroup, { key: "comision", error: "Elegí una comisión." });
+    f8b.appendChild(comisionComentarioLabel);
+    f8b.appendChild(comisionComentarioInput);
+    s8.appendChild(f8b);
+    form.appendChild(s8);
 
-    // 8) Panel de interés
-    const s8 = el("div", { class: "card" });
-    s8.appendChild(stepHeader(8, "Panel de interés", "Elegí uno."));
+    // 9) Panel de interés
+    const s9 = el("div", { class: "card" });
+    s9.appendChild(stepHeader(9, "Panel de interés", "Elegí uno."));
     const tallerComentarioLabel = el("label", { class: "field-label", style: "margin-top:16px;" }, [text("¿Qué esperás de ese panel? (opcional)")]);
     const tallerComentarioInput = el("textarea", { class: "textarea", placeholder: "Elegí primero un panel arriba" });
     tallerComentarioInput.addEventListener("input", () => { state.tallerComentario = tallerComentarioInput.value.trim(); });
@@ -252,20 +262,20 @@
       tallerComentarioLabel.firstChild.textContent = `¿Qué esperás del panel "${v}"? (opcional)`;
       tallerComentarioInput.placeholder = "Contanos en pocas palabras";
     });
-    const f8 = fieldWrap(null, tallerGroup, { key: "taller", error: "Elegí un panel." });
-    f8.appendChild(tallerComentarioLabel);
-    f8.appendChild(tallerComentarioInput);
-    s8.appendChild(f8);
-    form.appendChild(s8);
+    const f9 = fieldWrap(null, tallerGroup, { key: "taller", error: "Elegí un panel." });
+    f9.appendChild(tallerComentarioLabel);
+    f9.appendChild(tallerComentarioInput);
+    s9.appendChild(f9);
+    form.appendChild(s9);
 
-    // 9) Visión país
+    // 10) Visión país
     const visionFrase = el("input", { class: "input", type: "text", id: "fVisionFrase", placeholder: "En una frase (opcional)" });
     visionFrase.addEventListener("input", () => { state.visionFrase = visionFrase.value.trim(); });
-    const s9 = el("div", { class: "card" });
-    s9.appendChild(stepHeader(9, "Visión del país"));
-    s9.appendChild(fieldWrap("¿Qué tan optimista sos sobre el futuro del país?", radioGroup("vision", VISION, (v) => { state.visionEscala = v; }), { key: "visionEscala" }));
-    s9.appendChild(fieldWrap("¿Qué país te gustaría construir? (opcional)", visionFrase));
-    form.appendChild(s9);
+    const s10 = el("div", { class: "card" });
+    s10.appendChild(stepHeader(10, "Visión del país"));
+    s10.appendChild(fieldWrap("¿Qué tan optimista sos sobre el futuro del país?", radioGroup("vision", VISION, (v) => { state.visionEscala = v; }), { key: "visionEscala" }));
+    s10.appendChild(fieldWrap("¿Qué país te gustaría construir? (opcional)", visionFrase));
+    form.appendChild(s10);
 
     // Enviar
     const submitBtn = el("button", { class: "btn btn-primary btn-block", type: "submit" }, [text("Enviar respuesta")]);
@@ -274,13 +284,13 @@
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
-      handleSubmit(form, submitBtn, msg, counter5, counter6, problemaOtroInput, fAgrupacion, comisionComentarioLabel, comisionComentarioInput, tallerComentarioLabel, tallerComentarioInput);
+      handleSubmit(form, submitBtn, msg, counterProblemas, counterNecesidades, problemaOtroInput, fAgrupacion, comisionComentarioLabel, comisionComentarioInput, tallerComentarioLabel, tallerComentarioInput);
     });
 
     return form;
   }
 
-  async function handleSubmit(form, submitBtn, msg, counter5, counter6, problemaOtroInput, fAgrupacion, comisionComentarioLabel, comisionComentarioInput, tallerComentarioLabel, tallerComentarioInput) {
+  async function handleSubmit(form, submitBtn, msg, counterProblemas, counterNecesidades, problemaOtroInput, fAgrupacion, comisionComentarioLabel, comisionComentarioInput, tallerComentarioLabel, tallerComentarioInput) {
     msg.classList.remove("is-visible", "success", "error");
     const required = ["provincia", "localidad", "participa", "situacionEscala", "situacionTexto", "problemas", "necesidades", "comision", "taller", "visionEscala"];
     if (state.participa === "Sí") required.push("agrupacion");
@@ -319,6 +329,7 @@
       state.nombre = ""; state.provincia = ""; state.localidad = "";
       state.participa = ""; state.agrupacion = "";
       state.situacionEscala = null; state.situacionTexto = "";
+      state.problematicaTerritorio = "";
       state.problemas.length = 0; state.problemaOtro = ""; state.necesidades.length = 0;
       state.comision = ""; state.comisionComentario = "";
       state.taller = ""; state.tallerComentario = "";
@@ -327,8 +338,8 @@
       tallerComentarioLabel.firstChild.textContent = "¿Qué esperás de ese panel? (opcional)";
       tallerComentarioInput.placeholder = "Elegí primero un panel arriba";
       state.visionEscala = null; state.visionFrase = "";
-      counter5.textContent = `0/${MAX_MULTI} elegidos`;
-      counter6.textContent = `0/${MAX_MULTI} elegidos`;
+      counterProblemas.textContent = `0/${MAX_MULTI} elegidos`;
+      counterNecesidades.textContent = `0/${MAX_MULTI} elegidos`;
       msg.textContent = "¡Gracias! Tu respuesta ya se sumó al mapa y a la síntesis.";
       msg.classList.add("is-visible", "success");
       msg.scrollIntoView({ behavior: "smooth", block: "center" });
