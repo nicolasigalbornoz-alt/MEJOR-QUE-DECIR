@@ -11,6 +11,12 @@
   <meta name="theme-color" content="#04537a" />
   <link rel="preload" href="assets/fonts/outfit-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preconnect" href="https://script.google.com" crossorigin />
+  <script>
+    try {
+      var t = localStorage.getItem("mqd_theme");
+      if (t) document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  </script>
   <link rel="stylesheet" href="assets/css/styles.css" />
 </head>
 <body data-page="encuesta">
