@@ -34,15 +34,8 @@
   const MAX_MB = 8;
   const WARN_MB = 3; // a partir de acá, avisamos que puede tardar
 
-  // Tiene que coincidir con la lista de comisiones de assets/js/encuesta.js.
-  const COMISIONES = [
-    "Trabajo y producción",
-    "Modelo de desarrollo y federalismo",
-    "Soberanía, defensa e integración territorial",
-    "Desafíos éticos y políticos de la IA: una mirada desde el sur global",
-    "Seguridad",
-    "Militancia territorial",
-  ];
+  // Lista compartida — ver assets/js/comisiones.js.
+  const COMISIONES = window.MQD_COMISIONES;
 
   function getSession() {
     try {

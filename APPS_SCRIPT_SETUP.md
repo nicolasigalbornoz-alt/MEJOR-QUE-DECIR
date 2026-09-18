@@ -197,9 +197,31 @@ ejemplo si cambia algún cupo, o se agrega/saca un taller) — reconstruye
 la pestaña "Panel de cupos" entera, sin tocar nunca "Respuestas
 encuesta". Si cambia la lista de comisiones o talleres, hay que
 actualizarla en **dos lugares que tienen que coincidir**:
-`assets/js/encuesta.js` (arrays `COMISIONES` / `TALLERES`) y
-`apps-script/Code.gs` (arrays `COMISIONES_CUPO` / `TALLERES_CUPO`,
-cerca de `crearPanelDeCupos`).
+`assets/js/comisiones.js` (arrays `MQD_COMISIONES` / `MQD_TALLERES` —
+de ahí toman la lista tanto la encuesta como el panel de administración
+y la síntesis) y `apps-script/Code.gs` (arrays `COMISIONES_CUPO` /
+`TALLERES_CUPO`, cerca de `crearPanelDeCupos`).
+
+### Comisiones y el rompecabezas de la síntesis
+
+`sintesis.html` muestra cada comisión de `assets/js/comisiones.js` como
+una pieza de un rompecabezas: al tocarla se abre un desglose (problemas,
+necesidades, testimonios y el acta subida) armado con las respuestas de
+la encuesta cuya "Comisión de interés" coincide EXACTO con ese nombre.
+Por eso el nombre tiene que ser idéntico en `comisiones.js` y en
+`COMISIONES_CUPO` de `Code.gs` — si difieren aunque sea en un acento o
+una coma, esa comisión va a aparecer sin datos aunque haya respuestas
+cargadas.
+
+La encuesta también guarda, de forma opcional, un comentario sobre la
+comisión y sobre el panel/taller elegido (columnas "Comentario sobre la
+comisión elegida" y "Comentario sobre el panel/taller elegido", al
+final de `RESPUESTA_HEADERS`). Si tu pestaña "Respuestas encuesta" ya
+existía de antes de este cambio, no tiene esas dos columnas en el
+encabezado — igual que con cualquier cambio de esquema, borrala entera
+(clic derecho en su nombre → Eliminar) después de pegar el `Code.gs`
+actualizado, así se vuelve a crear sola con el esquema completo. No hay
+drama si no tiene respuestas reales todavía.
 
 ## Si el autocompletado no encuentra a nadie
 

@@ -75,23 +75,133 @@
     }
   }
 
-  function renderActas(el, actas) {
-    if (!actas.length) {
-      el.innerHTML = `<p class="empty-note">Todavía no se subió ninguna acta.</p>`;
-      return;
+  // ---------- Rompecabezas de comisiones ----------
+  // Una pieza por comisión (assets/js/comisiones.js), coloreada con la
+  // misma escala secuencial que usa el mapa. Cada pieza muestra cuántos
+  // eligieron esa comisión; al tocarla se abre el desglose completo
+  // (reutilizando la misma hoja deslizable de mapa.html) con el acta de
+  // esa comisión embebida, si ya se subió.
+  const PUZZLE_COLOR_VARS = ["--seq-250", "--seq-300", "--seq-350", "--seq-400", "--seq-450", "--seq-500", "--seq-550", "--seq-600", "--seq-650"];
+
+  function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  function puzzlePieceSvg(color) {
+    return `<svg viewBox="0 0 100 100" aria-hidden="true">
+      <path d="M10,10 L40,10 A10,10 0 0 1 60,10 L90,10
+               L90,40 A10,10 0 0 1 90,60 L90,90
+               L60,90 A10,10 0 0 1 40,90 L10,90
+               L10,60 A10,10 0 0 1 10,40 Z" fill="${color}"></path>
+    </svg>`;
+  }
+
+  function buildPuzzleGrid(el, data) {
+    const lista = window.MQD_COMISIONES || [];
+    el.innerHTML = lista
+      .map((nombre, i) => {
+        const stat = data.byComision[nombre];
+        const count = stat ? stat.count : 0;
+        const color = cssVar(PUZZLE_COLOR_VARS[i % PUZZLE_COLOR_VARS.length]);
+        return `
+        <button type="button" class="puzzle-piece" data-comision="${escapeHtml(nombre)}" aria-label="Ver desglose de la comisión ${escapeHtml(nombre)}">
+          ${puzzlePieceSvg(color)}
+          <span class="puzzle-piece__label">
+            <b>${escapeHtml(nombre)}</b>
+            <small${count ? "" : ' class="is-empty"'}>${count ? count + (count === 1 ? " respuesta" : " respuestas") : "Sin datos todavía"}</small>
+          </span>
+        </button>`;
+      })
+      .join("");
+  }
+
+  // El link que devuelve Drive (file.getUrl()) tiene forma
+  // .../file/d/<ID>/view?... — de ahí sacamos el ID para armar el link de
+  // vista previa embebible (.../file/d/<ID>/preview), que sí se puede
+  // meter en un iframe (a diferencia del link de "view" normal).
+  function driveEmbedUrl(url) {
+    const m = String(url || "").match(/\/d\/([a-zA-Z0-9_-]+)/);
+    return m ? `https://drive.google.com/file/d/${m[1]}/preview` : null;
+  }
+
+  function actaBlockHtml(actasComision) {
+    if (!actasComision.length) {
+      return `<h4 style="margin-top:18px;">Acta de la comisión</h4><p class="empty-note">Todavía no se subió el acta de esta comisión.</p>`;
     }
-    el.innerHTML = `<div class="drive-list">${actas
-      .map(
-        (a) => `
-      <div class="card drive-item" style="padding:14px 16px;">
-        <a class="drive-item__title" href="${escapeHtml(a.url)}" target="_blank" rel="noopener">
-          <span class="drive-item__icon">${FILE_ICON}</span>
-          ${escapeHtml(a.comision)} ↗
-        </a>
-        <p class="muted small" style="margin:4px 0 0 28px;">${escapeHtml(a.nombre)}</p>
-      </div>`
-      )
-      .join("")}</div>`;
+    return `<h4 style="margin-top:18px;">Acta de la comisión</h4>${actasComision
+      .map((a) => {
+        const embedUrl = driveEmbedUrl(a.url);
+        return `
+        ${embedUrl ? `<div class="acta-embed-wrap"><iframe src="${embedUrl}" loading="lazy"></iframe></div>` : ""}
+        <a class="acta-embed-link" href="${escapeHtml(a.url)}" target="_blank" rel="noopener">
+          <span class="drive-item__icon">${FILE_ICON}</span> Ver acta completa (${escapeHtml(a.nombre)}) ↗
+        </a>`;
+      })
+      .join("")}`;
+  }
+
+  function buildComisionSheetContent(nombre, data, actas) {
+    const stat = data.byComision[nombre];
+    const actasComision = actas.filter((a) => a.comision === nombre);
+    const top = (obj, n) => window.MQD_sortedEntries(obj).slice(0, n);
+
+    if (!stat || !stat.count) {
+      return `
+        <h3>${escapeHtml(nombre)}</h3>
+        <p class="empty-note">Todavía nadie eligió esta comisión como su "Comisión de interés" en la encuesta. Esta pieza del rompecabezas se completa sola a medida que lleguen respuestas.</p>
+        ${actaBlockHtml(actasComision)}
+      `;
+    }
+
+    const problemas = top(stat.problemas, 5);
+    const necesidades = top(stat.necesidades, 5);
+    const maxP = Math.max(1, ...problemas.map((x) => x[1]));
+    const maxN = Math.max(1, ...necesidades.map((x) => x[1]));
+
+    const quotesHtml = stat.quotes.length
+      ? stat.quotes
+          .map(
+            (q) => `<blockquote class="testimonio">"${escapeHtml(q.text)}"<footer>— ${q.localidad ? escapeHtml(q.localidad) + ", " : ""}${escapeHtml(q.provincia || "")}</footer></blockquote>`
+          )
+          .join("")
+      : "";
+
+    return `
+      <h3>${escapeHtml(nombre)}</h3>
+      <div class="stat-row" style="margin: 14px 0 18px;">
+        <div class="stat"><b>${stat.count}</b><span>Interesados/as</span></div>
+        <div class="stat"><b class="stat-text">${stat.situacionN ? SITUACION_LABEL[Math.round(stat.situacionSum / stat.situacionN)] : "Sin datos"}</b><span>Situación</span></div>
+        <div class="stat"><b class="stat-text">${stat.visionN ? VISION_LABEL[String(Math.round(stat.visionSum / stat.visionN))] : "Sin datos"}</b><span>Visión país</span></div>
+      </div>
+      <h4>Problemas que más mencionan quienes eligieron esta comisión</h4>
+      ${barListHtml(problemas, maxP)}
+      <h4 style="margin-top:18px;">Necesidades que más mencionan</h4>
+      ${barListHtml(necesidades, maxN)}
+      ${quotesHtml ? `<h4 style="margin-top:18px;">En sus palabras</h4>${quotesHtml}` : ""}
+      ${actaBlockHtml(actasComision)}
+    `;
+  }
+
+  function initSheet() {
+    const backdrop = document.getElementById("sheetBackdrop");
+    const sheet = document.getElementById("sheet");
+    const body = document.getElementById("sheetBody");
+
+    function open(html) {
+      body.innerHTML = html;
+      backdrop.classList.add("is-open");
+      sheet.classList.add("is-open");
+      document.body.style.overflow = "hidden";
+    }
+    function close() {
+      backdrop.classList.remove("is-open");
+      sheet.classList.remove("is-open");
+      document.body.style.overflow = "";
+    }
+    backdrop.addEventListener("click", close);
+    document.getElementById("sheetClose").addEventListener("click", close);
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+    return { open, close };
   }
 
   function dominant(obj) {
@@ -179,7 +289,15 @@
   async function init() {
     const banner = document.getElementById("dataBanner");
     const [data, actas] = await Promise.all([window.MQD_DATA.load(), loadActas()]);
-    renderActas(document.getElementById("actasList"), actas);
+
+    const puzzleGrid = document.getElementById("puzzleGrid");
+    buildPuzzleGrid(puzzleGrid, data);
+    const sheet = initSheet();
+    puzzleGrid.addEventListener("click", (e) => {
+      const btn = e.target.closest(".puzzle-piece");
+      if (!btn) return;
+      sheet.open(buildComisionSheetContent(btn.dataset.comision, data, actas));
+    });
 
     banner.classList.remove("skeleton");
     if (data.isDemo) {
