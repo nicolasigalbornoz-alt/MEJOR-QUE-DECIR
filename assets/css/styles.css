@@ -736,12 +736,7 @@ button { font-family: inherit; }
    que la de comisiones (menos ancho máximo, ícono y textos más chicos):
    son 6 datos de una sola línea cada uno, no hace falta que ocupen tanto
    lugar — sobre todo en celular, donde antes se sentía demasiado grande. */
-/* margin-top: en sintesis.html el rompecabezas de comisiones siempre
-   tiene el párrafo ".puzzle-intro" arriba, que ya deja aire antes de la
-   grilla — acá en cambio la grilla va pegada directo abajo del <h2>, y
-   el margin-bottom por default de los títulos (.5em) se sentía muy
-   poco contra un bloque de color tan grande. */
-.puzzle-grid--compact { max-width: 460px; margin-top: 20px; }
+.puzzle-grid--compact { max-width: 460px; }
 .puzzle-grid--compact .puzzle-piece__icon { width: 20px; height: 20px; margin-bottom: 4px; }
 .puzzle-grid--compact .puzzle-piece__label { padding: 0 11%; }
 .puzzle-grid--compact .puzzle-piece__label b { font-size: 11px; -webkit-line-clamp: 3; }
@@ -763,6 +758,16 @@ button { font-family: inherit; }
 }
 .puzzle-piece--static { cursor: default; }
 .puzzle-piece--static:hover > svg path, .puzzle-piece--static:active > svg path { filter: none; transform: none; }
+
+/* Ritmo vertical del inicio: el título de "¿Qué es..." quedaba a solo
+   12px de su párrafo (el margin-bottom por default de los títulos,
+   .5em) mientras que "Qué preguntamos" había quedado a 20px de su
+   grilla (un parche puntual) — dos secciones seguidas con la misma
+   estructura (título + contenido) pero distinto aire entre medio. Un
+   solo valor para las dos, más grande que el de antes porque contra el
+   bloque de color de la grilla el margin-bottom original se sentía
+   corto igual. */
+body[data-page="index"] .section-tight h2 { margin-bottom: 24px; }
 
 .sheet .acta-embed-wrap { margin: 14px 0; border-radius: var(--radius-m); overflow: hidden; border: 1px solid var(--hairline); background: var(--surface-2); }
 .sheet .acta-embed-wrap iframe { display: block; width: 100%; height: 340px; border: none; }
