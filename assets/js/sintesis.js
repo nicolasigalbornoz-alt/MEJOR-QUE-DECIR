@@ -87,12 +87,68 @@
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   }
 
-  function puzzlePieceSvg(color) {
+  // Grilla fija de 3x3 (9 comisiones) para que las piezas realmente
+  // ENCAJEN entre sí: cada borde interno de la grilla se decide una sola
+  // vez y las dos piezas que lo comparten dibujan el lado complementario
+  // (una tab que sobresale, la otra una muesca del mismo tamaño en el
+  // mismo lugar) — por eso la cantidad de columnas no puede ser
+  // responsive (ver comentario en .puzzle-grid de styles.css), si no la
+  // pieza de al lado en pantallas angostas ya no sería la que calculó el
+  // encastre.
+  //
+  // JOINT_H[fila][junta] = true → la pieza de la izquierda de esa junta
+  // tiene la tab (la de la derecha, la muesca que la recibe). Dos juntas
+  // horizontales por fila (col0-col1, col1-col2). JOINT_V es lo mismo
+  // para las juntas verticales, indexadas por columna.
+  const JOINT_H = [
+    [true, false],
+    [false, true],
+    [true, false],
+  ];
+  const JOINT_V = [
+    [false, true],
+    [true, false],
+    [false, true],
+  ];
+
+  // Borde exterior de la grilla (fila/columna 0 o 2 hacia afuera) siempre
+  // recto — como si esta grilla de comisiones fuera, a su vez, una sola
+  // pieza rectangular de un rompecabezas más grande (el del Encuentro).
+  function edgesFor(r, c) {
+    return {
+      top: r === 0 ? "flat" : JOINT_V[c][r - 1] ? "notch" : "tab",
+      bottom: r === 2 ? "flat" : JOINT_V[c][r] ? "tab" : "notch",
+      left: c === 0 ? "flat" : JOINT_H[r][c - 1] ? "notch" : "tab",
+      right: c === 2 ? "flat" : JOINT_H[r][c] ? "tab" : "notch",
+    };
+  }
+
+  // Un lado "flat" es una línea recta (borde exterior). Uno con tab/notch
+  // sale del cuadrado base (0..100) hacia afuera (tab) o se mete hacia
+  // adentro (notch) en el tercio central del lado — el propio SVG tiene
+  // overflow:visible (ver styles.css) así que la parte de la tab que
+  // sobresale del cuadrado de 100x100 se sigue viendo, pisando visualmente
+  // la celda vecina (que no tiene gap, ver .puzzle-grid) y armando el
+  // encastre.
+  function puzzlePiecePath(edges) {
+    const seg = (kind, mid1, mid2, corner) => {
+      if (kind === "flat") return `L${corner}`;
+      const sweep = kind === "tab" ? 1 : 0;
+      return `L${mid1} A15,15 0 0,${sweep} ${mid2} L${corner}`;
+    };
+    return [
+      "M0,0",
+      seg(edges.top, "35,0", "65,0", "100,0"),
+      seg(edges.right, "100,35", "100,65", "100,100"),
+      seg(edges.bottom, "65,100", "35,100", "0,100"),
+      seg(edges.left, "0,65", "0,35", "0,0"),
+      "Z",
+    ].join(" ");
+  }
+
+  function puzzlePieceSvg(color, edges) {
     return `<svg viewBox="0 0 100 100" aria-hidden="true">
-      <path d="M10,10 L40,10 A10,10 0 0 1 60,10 L90,10
-               L90,40 A10,10 0 0 1 90,60 L90,90
-               L60,90 A10,10 0 0 1 40,90 L10,90
-               L10,60 A10,10 0 0 1 10,40 Z" fill="${color}"></path>
+      <path d="${puzzlePiecePath(edges)}" fill="${color}"></path>
     </svg>`;
   }
 
@@ -103,9 +159,11 @@
         const stat = data.byComision[nombre];
         const count = stat ? stat.count : 0;
         const color = cssVar(PUZZLE_COLOR_VARS[i % PUZZLE_COLOR_VARS.length]);
+        const r = Math.floor(i / 3);
+        const c = i % 3;
         return `
         <button type="button" class="puzzle-piece" data-comision="${escapeHtml(nombre)}" aria-label="Ver desglose de la comisión ${escapeHtml(nombre)}">
-          ${puzzlePieceSvg(color)}
+          ${puzzlePieceSvg(color, edgesFor(r, c))}
           <span class="puzzle-piece__label">
             <b>${escapeHtml(nombre)}</b>
             <small${count ? "" : ' class="is-empty"'}>${count ? count + (count === 1 ? " respuesta" : " respuestas") : "Sin datos todavía"}</small>

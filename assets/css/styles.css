@@ -680,12 +680,15 @@ button { font-family: inherit; }
 }
 .puzzle-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  /* Siempre 3 columnas (fijo, sin @media): las piezas encajan entre sí
+     (cada una calcula sus 4 bordes — tab/muesca — según su vecina real
+     en esta grilla de 3x3), así que la cantidad de columnas no puede
+     cambiar según el ancho de pantalla o el encastre dejaría de coincidir. */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
   max-width: 620px;
   margin: 0 auto;
 }
-@media (min-width: 560px) { .puzzle-grid { grid-template-columns: repeat(3, 1fr); } }
 .puzzle-piece {
   position: relative;
   aspect-ratio: 1;
