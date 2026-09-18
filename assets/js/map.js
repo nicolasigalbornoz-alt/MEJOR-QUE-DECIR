@@ -70,6 +70,59 @@ window.MQD_MAP = (function () {
       worldCopyJump: false,
     }).setView([-38.4, -63.6], 4);
 
+    // Leaflet mide el contenedor UNA sola vez, al crear el mapa — si
+    // después cambia de tamaño (girar el celular, cambiar el ancho de la
+    // ventana, abrir/cerrar las herramientas de desarrollador) el mapa
+    // se queda con esa medida vieja: el dibujo se corta, aparecen franjas
+    // vacías o el mapa queda "pegado" en un lugar de la pantalla que ya
+    // no es el suyo. ResizeObserver avisa cada vez que el contenedor
+    // cambia de tamaño así el mapa se puede volver a medir solo, sin
+    // esperar a que alguien lo toque para que se note el desajuste.
+    //
+    // No alcanza con invalidateSize() solo: si el contenedor pasa de
+    // angosto-alto a ancho-bajo (o viceversa), el zoom que se había
+    // calculado para el otro alto/ancho puede dejar todo el país afuera
+    // de lo que se ve. Por eso además se vuelve a encuadrar contra
+    // geoLayer — no hace falta guardar el pan/zoom manual de quien esté
+    // mirando el mapa en ese momento: un resize de ventana en medio de
+    // una sesión es raro, y es mejor perder ese zoom puntual que
+    // arriesgarse a un mapa roto o en blanco.
+    function refit() {
+      map.invalidateSize({ animate: false, pan: false });
+      if (geoLayer) {
+        try { map.fitBounds(geoLayer.getBounds(), { padding: [12, 12], animate: false }); } catch (e) { /* noop */ }
+      }
+    }
+
+    if (window.ResizeObserver) {
+      // ResizeObserver puede avisar ANTES de que el resto de la página
+      // (header, franja de stats, banner, todo lo que está arriba del
+      // mapa) termine de acomodarse tras el mismo resize — si Leaflet se
+      // vuelve a medir en ese momento intermedio, calcula mal dónde
+      // empieza de verdad su contenedor y el mapa queda dibujado corrido
+      // de lugar o directamente en blanco. En vez de adivinar UN
+      // momento "seguro" para medir (esto se probó con
+      // requestAnimationFrame y seguía fallando salteado, de forma
+      // difícil de reproducir siempre igual — carrera de reflow real
+      // contra la medición, no algo que un solo re-intento garantice
+      // esquivar), se reintenta varias veces con distintos tiempos de
+      // espera: da lo mismo si el primero cae en mal momento, alguno de
+      // los siguientes va a encontrar la página ya asentada — medido a
+      // mano, el peor caso tardó bien más de un segundo en acomodarse
+      // solo, por eso el último reintento llega hasta los 2.5s.
+      // refit() no tiene efectos raros por repetirse de más.
+      let timers = [];
+      const resizeObserver = new ResizeObserver(() => {
+        timers.forEach(clearTimeout);
+        timers = [0, 150, 400, 1000, 2500].map((delay) => setTimeout(refit, delay));
+      });
+      resizeObserver.observe(mapEl);
+      map.on("unload", () => {
+        timers.forEach(clearTimeout);
+        resizeObserver.disconnect();
+      });
+    }
+
     const emptyFill = cssVar(EMPTY_VAR) || "#cde2fb";
 
     function baseStyleFor(provinceId) {
