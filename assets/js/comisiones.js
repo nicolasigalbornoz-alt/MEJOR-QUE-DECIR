@@ -27,7 +27,8 @@ window.MQD_TALLERES = [
   "Gestión Municipal",
   "Política legislativa",
   "Comunicación política y redes",
-  "Historia del movimiento peronista",
+  "Historia del movimiento peronista — Vol I: gobierno de Perón y resistencia peronista",
+  "Historia del movimiento peronista — Vol II: de 1970 a la actualidad",
   "Seguridad",
   "Economía",
 ];
