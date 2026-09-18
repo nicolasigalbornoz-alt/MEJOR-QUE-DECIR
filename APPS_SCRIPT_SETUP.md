@@ -172,10 +172,11 @@ o la contraseña reales.
 La encuesta ahora también pregunta a qué **panel/taller** le interesaría
 participar a cada persona (selección única, igual que "Comisión de
 interés"). La pestaña **"Panel de cupos"** de la planilla muestra en
-vivo cuántos se anotaron en cada comisión (cupo 135) y cada taller
-(cupo 115) — se completa sola con fórmulas que leen "Respuestas
-encuesta", así que no hace falta tocar nada cada vez que llega una
-respuesta nueva.
+vivo cuántos se anotaron en cada comisión (cupo 125) y cada taller
+(cupo 140) — pensado para un total de ~1100 personas en el encuentro
+(9 comisiones × 125 = 1125, 8 talleres × 140 = 1120). Se completa sola
+con fórmulas que leen "Respuestas encuesta", así que no hace falta
+tocar nada cada vez que llega una respuesta nueva.
 
 Para crearla (una sola vez):
 

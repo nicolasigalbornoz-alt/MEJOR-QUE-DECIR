@@ -484,14 +484,18 @@ function handleActas() {
 
 // ---------- Panel de cupos (comisiones y talleres) ----------
 
-// Cupos indicados por el equipo organizador: 135 por comisión, 115 por
-// taller. Las listas de nombres tienen que coincidir EXACTO con
-// assets/js/comisiones.js (MQD_COMISIONES / MQD_TALLERES) — el conteo
-// cuenta contra estos nombres, así que si cambia uno hay que cambiar los
-// dos lados y volver a ejecutar crearPanelDeCupos().
+// Cupos pensados para un total de ~1100 personas en el encuentro: 125 por
+// comisión (9 comisiones × 125 = 1125) y 140 por taller (8 talleres × 140
+// = 1120) — cada persona elige una comisión Y un taller, así que la suma
+// de cupos de cada lista por separado tiene que cubrir el total de
+// asistentes esperado, con un margen chico. Las listas de nombres tienen
+// que coincidir EXACTO con assets/js/comisiones.js (MQD_COMISIONES /
+// MQD_TALLERES) — el conteo cuenta contra estos nombres, así que si
+// cambia uno hay que cambiar los dos lados y volver a ejecutar
+// crearPanelDeCupos().
 const CUPOS_SHEET_NAME = "Panel de cupos";
-const CUPO_POR_COMISION = 135;
-const CUPO_POR_TALLER = 115;
+const CUPO_POR_COMISION = 125;
+const CUPO_POR_TALLER = 140;
 const COMISIONES_CUPO = [
   "Trabajo y situación económica",
   "Modelo de desarrollo, producción y federalismo",
