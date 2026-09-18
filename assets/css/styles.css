@@ -741,6 +741,21 @@ button { font-family: inherit; }
 .puzzle-grid--compact .puzzle-piece__label { padding: 0 11%; }
 .puzzle-grid--compact .puzzle-piece__label b { font-size: 11px; -webkit-line-clamp: 3; }
 .puzzle-grid--compact .puzzle-piece__label small { font-size: 9.5px; margin-top: 2px; }
+/* En pantallas más anchas hay lugar de sobra (el contenedor ".wrap" mide
+   720px) — el tope chico de 460px y la tipografía reducida, pensados
+   para que no ocupara tanto alto en celular, ahí se ven perdidos/de más
+   chicos que el resto de la página. A partir de este ancho, la grilla
+   vuelve al tamaño del rompecabezas de comisiones (mismo max-width e
+   ícono/tipografía) — las columnas nunca cambian (siempre 3, fijo), así
+   que el encastre entre piezas no se ve afectado por este cambio de
+   tamaño. */
+@media (min-width: 760px) {
+  .puzzle-grid--compact { max-width: 620px; }
+  .puzzle-grid--compact .puzzle-piece__icon { width: 26px; height: 26px; margin-bottom: 6px; }
+  .puzzle-grid--compact .puzzle-piece__label { padding: 0 14%; }
+  .puzzle-grid--compact .puzzle-piece__label b { font-size: 13px; -webkit-line-clamp: 3; }
+  .puzzle-grid--compact .puzzle-piece__label small { font-size: 11px; margin-top: 4px; }
+}
 .puzzle-piece--static { cursor: default; }
 .puzzle-piece--static:hover > svg path, .puzzle-piece--static:active > svg path { filter: none; transform: none; }
 
