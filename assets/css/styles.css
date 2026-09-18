@@ -728,12 +728,19 @@ button { font-family: inherit; }
 .puzzle-piece__icon { display: block; width: 26px; height: 26px; margin: 0 auto 6px; }
 .puzzle-piece__icon svg { width: 100%; height: 100%; stroke: #fff; }
 
-/* Grilla de 6 piezas fijas (3x2) de "Qué preguntamos" en index.html —
+/* Grilla de 6 piezas fijas (2x3) de "Qué preguntamos" en index.html —
    mismo motor que el rompecabezas de comisiones (ver assets/js/puzzle.js
    y assets/js/home.js), pero sin interacción (no llevan datos en vivo ni
    abren nada al tocarlas), así que no tienen el cursor ni el efecto de
-   hover de una pieza tocable. */
-.puzzle-grid--2col { grid-template-columns: repeat(2, 1fr); }
+   hover de una pieza tocable. "--compact" además la achica un poco más
+   que la de comisiones (menos ancho máximo, ícono y textos más chicos):
+   son 6 datos de una sola línea cada uno, no hace falta que ocupen tanto
+   lugar — sobre todo en celular, donde antes se sentía demasiado grande. */
+.puzzle-grid--compact { max-width: 460px; }
+.puzzle-grid--compact .puzzle-piece__icon { width: 20px; height: 20px; margin-bottom: 4px; }
+.puzzle-grid--compact .puzzle-piece__label { padding: 0 11%; }
+.puzzle-grid--compact .puzzle-piece__label b { font-size: 11px; -webkit-line-clamp: 3; }
+.puzzle-grid--compact .puzzle-piece__label small { font-size: 9.5px; margin-top: 2px; }
 .puzzle-piece--static { cursor: default; }
 .puzzle-piece--static:hover > svg path, .puzzle-piece--static:active > svg path { filter: none; transform: none; }
 
