@@ -145,7 +145,10 @@
     nombreInput.addEventListener("input", () => { state.nombre = nombreInput.value.trim(); });
     const s1 = el("div", { class: "card" });
     s1.appendChild(stepHeader(1, "¿Quién sos?", "Buscá tu nombre: si ya estás inscripto al encuentro, te completamos provincia y ciudad solos."));
-    s1.appendChild(fieldWrap("Nombre y apellido", nombreInput, { key: "nombre" }));
+    s1.appendChild(fieldWrap("Nombre y apellido", nombreInput, {
+      key: "nombre",
+      hint: "Usamos tu nombre solo para reconocerte en el padrón del encuentro y autocompletar tu provincia/ciudad. Nunca se publica en el mapa ni en la síntesis, que muestran datos agregados por distrito.",
+    }));
     form.appendChild(s1);
     setupAutocomplete(nombreInput, (item) => {
       state.nombre = item.nombre;
