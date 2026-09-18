@@ -63,6 +63,8 @@ const RESPUESTA_HEADERS = [
   "Visión país (-2 a 2)",
   "Visión (frase)",
   "Taller elegido",
+  "Comentario sobre la comisión elegida",
+  "Comentario sobre el panel/taller elegido",
 ];
 
 // Cuánto se guarda cada cosa en CacheService antes de releer la planilla.
@@ -293,6 +295,8 @@ function appendResponse(data) {
       data.visionEscala != null ? data.visionEscala : "",
       (data.visionFrase || "").toString().trim(),
       (data.taller || "").toString().trim(),
+      (data.comisionComentario || "").toString().trim(),
+      (data.tallerComentario || "").toString().trim(),
     ]);
   } finally {
     lock.releaseLock();
@@ -479,20 +483,23 @@ function handleActas() {
 // ---------- Panel de cupos (comisiones y talleres) ----------
 
 // Cupos indicados por el equipo organizador: 135 por comisión, 115 por
-// taller. Las listas de nombres tienen que coincidir EXACTO con las que
-// arma assets/js/encuesta.js (COMISIONES / TALLERES) — el conteo cuenta
-// contra estos nombres, así que si cambia uno hay que cambiar los dos
-// lados y volver a ejecutar crearPanelDeCupos().
+// taller. Las listas de nombres tienen que coincidir EXACTO con
+// assets/js/comisiones.js (MQD_COMISIONES / MQD_TALLERES) — el conteo
+// cuenta contra estos nombres, así que si cambia uno hay que cambiar los
+// dos lados y volver a ejecutar crearPanelDeCupos().
 const CUPOS_SHEET_NAME = "Panel de cupos";
 const CUPO_POR_COMISION = 135;
 const CUPO_POR_TALLER = 115;
 const COMISIONES_CUPO = [
-  "Trabajo y producción",
-  "Modelo de desarrollo y federalismo",
-  "Soberanía, defensa e integración territorial",
-  "Desafíos éticos y políticos de la IA: una mirada desde el sur global",
+  "Trabajo y situación económica",
+  "Modelo de desarrollo, producción y federalismo",
+  "Soberanía, tierra y defensa",
+  "Inteligencia artificial, plataformas y poder: una mirada desde el Sur Global",
   "Seguridad",
-  "Militancia territorial",
+  "Educación",
+  "Salud mental",
+  "Vivienda, hábitat y urbanismo",
+  "Militancia en el siglo XXI",
 ];
 const TALLERES_CUPO = [
   "Pensar en la Argentina Bicontinental: Malvinas, Antártida y Atlántico Sur",

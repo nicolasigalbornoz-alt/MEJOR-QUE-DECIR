@@ -39,27 +39,12 @@
     "Conectividad y acceso a tecnología",
     "Programas de prevención de adicciones",
   ];
-  const COMISIONES = [
-    "Trabajo y producción",
-    "Modelo de desarrollo y federalismo",
-    "Soberanía, defensa e integración territorial",
-    "Desafíos éticos y políticos de la IA: una mirada desde el sur global",
-    "Seguridad",
-    "Militancia territorial",
-  ];
-  // Paneles/talleres del encuentro — cupo 115 cada uno (135 por comisión).
-  // Tiene que coincidir con la lista que arma crearPanelDeCupos() en
-  // apps-script/Code.gs, así el conteo de cupos cuenta contra los nombres
-  // correctos.
-  const TALLERES = [
-    "Pensar en la Argentina Bicontinental: Malvinas, Antártida y Atlántico Sur",
-    "Gestión Municipal",
-    "Política legislativa",
-    "Comunicación política y redes",
-    "Historia del movimiento peronista",
-    "Seguridad",
-    "Economía",
-  ];
+  // Comisiones y talleres — lista compartida en assets/js/comisiones.js
+  // (también la usan admin.js y sintesis.js). Apps Script tiene su propia
+  // copia (COMISIONES_CUPO / TALLERES_CUPO en Code.gs) que hay que
+  // actualizar a mano si esto cambia — el cupo cuenta contra esos nombres.
+  const COMISIONES = window.MQD_COMISIONES;
+  const TALLERES = window.MQD_TALLERES;
   const SITUACION = [
     { value: 1, label: "Muy mala" },
     { value: 2, label: "Mala" },
@@ -82,7 +67,8 @@
     participa: "", agrupacion: "",
     situacionEscala: null, situacionTexto: "",
     problemas: [], problemaOtro: "", necesidades: [],
-    comision: "", taller: "",
+    comision: "", comisionComentario: "",
+    taller: "", tallerComentario: "",
     visionEscala: null, visionFrase: "",
   };
 
@@ -241,16 +227,34 @@
     // 7) Comisión de interés
     const s7 = el("div", { class: "card" });
     s7.appendChild(stepHeader(7, "Comisión de interés", "Elegí una."));
-    const comisionGroup = radioGroup("comision", COMISIONES, (v) => { state.comision = v; });
+    const comisionComentarioLabel = el("label", { class: "field-label", style: "margin-top:16px;" }, [text("¿Qué te gustaría que se trabaje en esa comisión? (opcional)")]);
+    const comisionComentarioInput = el("textarea", { class: "textarea", placeholder: "Elegí primero una comisión arriba" });
+    comisionComentarioInput.addEventListener("input", () => { state.comisionComentario = comisionComentarioInput.value.trim(); });
+    const comisionGroup = radioGroup("comision", COMISIONES, (v) => {
+      state.comision = v;
+      comisionComentarioLabel.firstChild.textContent = `¿Qué te gustaría que se trabaje en "${v}"? (opcional)`;
+      comisionComentarioInput.placeholder = "Contanos en pocas palabras";
+    });
     const f7 = fieldWrap(null, comisionGroup, { key: "comision", error: "Elegí una comisión." });
+    f7.appendChild(comisionComentarioLabel);
+    f7.appendChild(comisionComentarioInput);
     s7.appendChild(f7);
     form.appendChild(s7);
 
     // 8) Panel de interés
     const s8 = el("div", { class: "card" });
     s8.appendChild(stepHeader(8, "Panel de interés", "Elegí uno."));
-    const tallerGroup = radioGroup("taller", TALLERES, (v) => { state.taller = v; });
+    const tallerComentarioLabel = el("label", { class: "field-label", style: "margin-top:16px;" }, [text("¿Qué esperás de ese panel? (opcional)")]);
+    const tallerComentarioInput = el("textarea", { class: "textarea", placeholder: "Elegí primero un panel arriba" });
+    tallerComentarioInput.addEventListener("input", () => { state.tallerComentario = tallerComentarioInput.value.trim(); });
+    const tallerGroup = radioGroup("taller", TALLERES, (v) => {
+      state.taller = v;
+      tallerComentarioLabel.firstChild.textContent = `¿Qué esperás del panel "${v}"? (opcional)`;
+      tallerComentarioInput.placeholder = "Contanos en pocas palabras";
+    });
     const f8 = fieldWrap(null, tallerGroup, { key: "taller", error: "Elegí un panel." });
+    f8.appendChild(tallerComentarioLabel);
+    f8.appendChild(tallerComentarioInput);
     s8.appendChild(f8);
     form.appendChild(s8);
 
@@ -270,13 +274,13 @@
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
-      handleSubmit(form, submitBtn, msg, counter5, counter6, problemaOtroInput, fAgrupacion);
+      handleSubmit(form, submitBtn, msg, counter5, counter6, problemaOtroInput, fAgrupacion, comisionComentarioLabel, comisionComentarioInput, tallerComentarioLabel, tallerComentarioInput);
     });
 
     return form;
   }
 
-  async function handleSubmit(form, submitBtn, msg, counter5, counter6, problemaOtroInput, fAgrupacion) {
+  async function handleSubmit(form, submitBtn, msg, counter5, counter6, problemaOtroInput, fAgrupacion, comisionComentarioLabel, comisionComentarioInput, tallerComentarioLabel, tallerComentarioInput) {
     msg.classList.remove("is-visible", "success", "error");
     const required = ["provincia", "localidad", "participa", "situacionEscala", "situacionTexto", "problemas", "necesidades", "comision", "taller", "visionEscala"];
     if (state.participa === "Sí") required.push("agrupacion");
@@ -316,7 +320,12 @@
       state.participa = ""; state.agrupacion = "";
       state.situacionEscala = null; state.situacionTexto = "";
       state.problemas.length = 0; state.problemaOtro = ""; state.necesidades.length = 0;
-      state.comision = ""; state.taller = "";
+      state.comision = ""; state.comisionComentario = "";
+      state.taller = ""; state.tallerComentario = "";
+      comisionComentarioLabel.firstChild.textContent = "¿Qué te gustaría que se trabaje en esa comisión? (opcional)";
+      comisionComentarioInput.placeholder = "Elegí primero una comisión arriba";
+      tallerComentarioLabel.firstChild.textContent = "¿Qué esperás de ese panel? (opcional)";
+      tallerComentarioInput.placeholder = "Elegí primero un panel arriba";
       state.visionEscala = null; state.visionFrase = "";
       counter5.textContent = `0/${MAX_MULTI} elegidos`;
       counter6.textContent = `0/${MAX_MULTI} elegidos`;

@@ -542,6 +542,44 @@ button { font-family: inherit; }
   box-shadow: var(--shadow-s);
   background: var(--surface-2);
 }
+
+/* ---------- Buscador de localidades (mapa.html) ---------- */
+.locality-search { position: relative; margin: 4px 0 0; }
+.locality-search > svg {
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+  width: 18px; height: 18px; color: var(--text-muted); pointer-events: none;
+}
+.locality-search input {
+  width: 100%; padding: 12px 14px 12px 42px;
+  border-radius: var(--radius-m); border: 1px solid var(--hairline);
+  background: var(--surface); color: var(--text-primary);
+  font-size: 15px; font-family: inherit;
+}
+.locality-search input:focus { outline: 2px solid var(--sky); outline-offset: 1px; }
+.locality-results {
+  position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 500;
+  background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-m);
+  box-shadow: var(--shadow-m); max-height: 280px; overflow-y: auto; padding: 6px;
+}
+.locality-result {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%; padding: 10px 10px; border: none; background: none; border-radius: 10px;
+  font-family: inherit; font-size: 14px; text-align: left; cursor: pointer; color: var(--text-primary);
+}
+.locality-result:hover, .locality-result:focus-visible { background: var(--surface-2); }
+.locality-results .empty-note { padding: 8px 10px; margin: 0; }
+
+.locality-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
+.locality-chip {
+  display: inline-flex; align-items: baseline; gap: 5px;
+  padding: 5px 10px; border-radius: 999px; background: var(--surface-2);
+  font-size: 12.5px; color: var(--text-secondary); scroll-margin: 90px;
+}
+.locality-chip b { color: var(--text-muted); font-size: 11px; font-weight: 600; }
+.locality-chip.is-target {
+  background: var(--sky-050); color: var(--navy); outline: 2px solid var(--sky);
+  font-weight: 600;
+}
 .leaflet-container { font-family: 'Outfit', system-ui, sans-serif; background: var(--surface-2); }
 .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--surface); color: var(--text-primary); }
 .leaflet-control-attribution { font-size: 10px; }
@@ -626,6 +664,73 @@ button { font-family: inherit; }
 .diverging-fill-neg { background: var(--div-warm); height: 100%; }
 .diverging-fill-pos { background: var(--div-cool); height: 100%; }
 .diverging-spacer { width: 2px; background: var(--surface); }
+
+/* ---------- Rompecabezas de comisiones (síntesis.html) ---------- */
+.puzzle-intro {
+  background: var(--sky-050);
+  border-radius: var(--radius-l);
+  padding: 16px 18px;
+  margin-bottom: 18px;
+  font-size: 14px;
+  color: var(--navy-700, var(--text-primary));
+}
+:root[data-theme="dark"] .puzzle-intro { background: var(--surface-2); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .puzzle-intro { background: var(--surface-2); }
+}
+.puzzle-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  max-width: 620px;
+  margin: 0 auto;
+}
+@media (min-width: 560px) { .puzzle-grid { grid-template-columns: repeat(3, 1fr); } }
+.puzzle-piece {
+  position: relative;
+  aspect-ratio: 1;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+.puzzle-piece svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.puzzle-piece svg path {
+  stroke: var(--page);
+  stroke-width: 2.5;
+  transition: filter .15s ease, transform .15s ease;
+  transform-origin: center;
+}
+.puzzle-piece:hover svg path, .puzzle-piece:focus-visible svg path { filter: brightness(1.1); transform: scale(1.03); }
+.puzzle-piece:active svg path { transform: scale(0.98); }
+.puzzle-piece:focus-visible { outline: none; }
+.puzzle-piece__label {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 0 16%;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,.25);
+}
+.puzzle-piece__label b {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.22;
+}
+.puzzle-piece__label small { display: block; margin-top: 4px; font-size: 10.5px; opacity: .92; }
+.puzzle-piece__label small.is-empty { opacity: .75; }
+
+.sheet .acta-embed-wrap { margin: 14px 0; border-radius: var(--radius-m); overflow: hidden; border: 1px solid var(--hairline); background: var(--surface-2); }
+.sheet .acta-embed-wrap iframe { display: block; width: 100%; height: 340px; border: none; }
+.sheet .acta-embed-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 600; margin-top: 8px; }
 
 /* ---------- Tags ---------- */
 .tag {

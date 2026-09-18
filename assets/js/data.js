@@ -88,7 +88,8 @@
     // en espacio político/militancia, 5 Nombre de la agrupación,
     // 6 Situación (1-5), 7 Situación/problemática (texto), 8 Problemas,
     // 9 Necesidades, 10 Comisión de interés, 11 Visión país (-2 a 2),
-    // 12 Visión (frase).
+    // 12 Visión (frase), 13 Taller elegido, 14 Comentario sobre la
+    // comisión elegida, 15 Comentario sobre el panel/taller elegido.
     const rows = Array.isArray(json && json.rows) ? json.rows : [];
     const out = [];
     for (const r of rows) {
@@ -113,6 +114,9 @@
         visionEscala: Number.isFinite(vision) && r[11] !== "" ? vision : null,
         visionFrase: (r[12] || "").toString().trim(),
         nombre: (r[1] || "").toString().trim(),
+        taller: (r[13] || "").toString().trim(),
+        comisionComentario: (r[14] || "").toString().trim(),
+        tallerComentario: (r[15] || "").toString().trim(),
       });
     }
     return out;
@@ -131,18 +135,40 @@
         count: 0, situacionSum: 0, situacionN: 0,
         visionSum: 0, visionN: 0,
         problemas: {}, necesidades: {},
-        localidades: new Set(), quotes: [],
+        // Mapa nombre de localidad -> cantidad de respuestas desde ahí (antes
+        // era un Set, solo para saber cuáles había; el mapa además sirve
+        // para el buscador de localidades del mapa federal).
+        localidades: new Map(), quotes: [],
       };
     }
     const nacProblemas = {}, nacNecesidades = {}, nacParticipa = {};
     const nacVision = { "-2": 0, "-1": 0, "0": 0, "1": 0, "2": 0 };
     const nacSituacion = { "1": 0, "2": 0, "3": 0, "4": 0, "5": 0 };
 
+    // Desglose por comisión — una entrada por cada valor de "Comisión de
+    // interés" que aparezca en los datos (las piezas del rompecabezas de
+    // síntesis.html se arman con esto). No hace falta conocer acá la lista
+    // completa de comisiones posibles: sintesis.js ya la tiene (assets/js/
+    // comisiones.js) y rellena con "sin datos" la que no tenga entrada.
+    const byComision = {};
+    function comisionBucket(nombre) {
+      if (!byComision[nombre]) {
+        byComision[nombre] = {
+          name: nombre, count: 0,
+          problemas: {}, necesidades: {},
+          visionSum: 0, visionN: 0,
+          situacionSum: 0, situacionN: 0,
+          quotes: [],
+        };
+      }
+      return byComision[nombre];
+    }
+
     for (const row of rows) {
       const b = byProvince[row.provinceId];
       if (!b) continue;
       b.count++;
-      if (row.localidad) b.localidades.add(row.localidad);
+      if (row.localidad) b.localidades.set(row.localidad, (b.localidades.get(row.localidad) || 0) + 1);
       if (row.situacionEscala != null) {
         b.situacionSum += row.situacionEscala; b.situacionN++;
         nacSituacion[String(row.situacionEscala)]++;
@@ -158,6 +184,19 @@
       if (quote && quote.length > 3 && b.quotes.length < 8) {
         b.quotes.push({ text: quote, localidad: row.localidad });
       }
+
+      if (row.comision) {
+        const c = comisionBucket(row.comision);
+        c.count++;
+        if (row.situacionEscala != null) { c.situacionSum += row.situacionEscala; c.situacionN++; }
+        if (row.visionEscala != null) { c.visionSum += row.visionEscala; c.visionN++; }
+        row.problemas.forEach((p) => bump(c.problemas, p));
+        row.necesidades.forEach((n) => bump(c.necesidades, n));
+        const cQuote = row.comisionComentario || row.situacionTexto || row.visionFrase;
+        if (cQuote && cQuote.length > 3 && c.quotes.length < 6) {
+          c.quotes.push({ text: cQuote, localidad: row.localidad, provincia: row.provinciaRaw });
+        }
+      }
     }
 
     const provincesWithData = Object.values(byProvince).filter((p) => p.count > 0);
@@ -167,7 +206,7 @@
       totalResponses: rows.length,
       totalProvinces: provincesWithData.length,
       totalLocalidades: new Set(rows.map((r) => norm(r.localidad)).filter(Boolean)).size,
-      byProvince, maxCount,
+      byProvince, byComision, maxCount,
       nacProblemas, nacNecesidades, nacParticipa, nacVision, nacSituacion,
       rows,
     };

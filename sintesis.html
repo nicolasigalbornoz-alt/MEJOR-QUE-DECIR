@@ -76,9 +76,14 @@
     </section>
 
     <section class="section-tight wrap">
-      <h2>Actas de las comisiones</h2>
-      <p class="muted">Documentos subidos por los responsables de cada comisión, parte del informe final.</p>
-      <div id="actasList"><p class="empty-note">Todavía no se subió ninguna acta.</p></div>
+      <h2>El rompecabezas de las comisiones</h2>
+      <div class="puzzle-intro">
+        Este documento es la pieza que aportan las juventudes al Encuentro Nacional. Puertas
+        adentro, también está armado como un rompecabezas: cada comisión de trabajo es una
+        pieza. Tocá una para ver su desglose — quiénes eligieron trabajar ahí, qué problemas y
+        necesidades marcaron, y el acta que subió su responsable.
+      </div>
+      <div class="puzzle-grid" id="puzzleGrid"></div>
     </section>
 
     <hr class="sep" />
@@ -98,11 +103,21 @@
     </section>
   </main>
 
+  <div class="sheet-backdrop" id="sheetBackdrop"></div>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Detalle de la comisión">
+    <div class="sheet__handle"></div>
+    <button class="sheet__close" id="sheetClose" aria-label="Cerrar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+    <div id="sheetBody"></div>
+  </div>
+
   <footer class="site-footer" id="site-footer"></footer>
 
   <script src="assets/js/vendor/papaparse.min.js"></script>
   <script src="assets/js/config.js"></script>
   <script src="assets/js/provinces.js"></script>
+  <script src="assets/js/comisiones.js"></script>
   <script src="assets/js/data.js"></script>
   <script src="assets/js/nav.js"></script>
   <script src="assets/js/reveal.js"></script>

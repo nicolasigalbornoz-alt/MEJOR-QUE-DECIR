@@ -99,6 +99,11 @@ window.MQD_MAP = (function () {
             layer.on("mouseover", () => layer.setStyle({ weight: 2.4 }));
             layer.on("mouseout", () => layer.setStyle(baseStyleFor(pid)));
           }
+          // Se dispara para CADA distrito ya dibujado (no solo al tocarlo)
+          // — lo usa el buscador de localidades para poder centrar el mapa
+          // en una provincia por nombre, sin que la persona la haya tocado
+          // primero.
+          if (opts.onFeatureReady) opts.onFeatureReady(pid, layer);
         },
       }).addTo(map);
 
@@ -124,6 +129,7 @@ window.MQD_MAP = (function () {
         marker.on("click", () => opts.onFeatureClick("caba", marker, () => marker.setStyle({ weight: 2 })));
       }
       if (interactive) marker.bindTooltip("CABA", { direction: "top", offset: [0, -6] });
+      if (opts.onFeatureReady) opts.onFeatureReady("caba", marker);
     }
 
     return map;
@@ -147,7 +153,15 @@ window.MQD_MAP = (function () {
     return labels[avg] || labels[String(avg)] || "—";
   }
 
-  function buildSheetContent(stat) {
+  function slug(s) {
+    return String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-");
+  }
+
+  // highlightLocalidad: nombre exacto de localidad a resaltar (viene del
+  // buscador — ver buildLocalitySearch) para que, al abrir el distrito
+  // desde un resultado de búsqueda, se note cuál es la localidad buscada
+  // en vez de tener que leer toda la lista.
+  function buildSheetContent(stat, highlightLocalidad) {
     const top = (obj, n) => window.MQD_sortedEntries(obj).slice(0, n);
     const problemas = top(stat.problemas, 5);
     const necesidades = top(stat.necesidades, 5);
@@ -176,6 +190,19 @@ window.MQD_MAP = (function () {
           .join("")
       : "";
 
+    // Localidades ordenadas de más a menos respuestas, cada una con su id
+    // (para poder hacer scroll hasta ella) y resaltada si es la que se
+    // buscó.
+    const localidadesEntries = Array.from(stat.localidades.entries()).sort((a, b) => b[1] - a[1]);
+    const localidadesHtml = localidadesEntries.length
+      ? `<div class="locality-chips">${localidadesEntries
+          .map(([nombre, count]) => {
+            const isTarget = highlightLocalidad && window.MQD_normalize(nombre) === window.MQD_normalize(highlightLocalidad);
+            return `<span class="locality-chip${isTarget ? " is-target" : ""}" id="loc-${slug(nombre)}">${nombre} <b>${count}</b></span>`;
+          })
+          .join("")}</div>`
+      : "";
+
     return `
       <span class="region-tag">Región ${stat.region}</span>
       <h3>${stat.name}</h3>
@@ -184,7 +211,7 @@ window.MQD_MAP = (function () {
         <div class="stat"><b class="stat-text">${fmtAvg(stat.situacionSum, stat.situacionN, SITUACION_LABEL)}</b><span>Situación</span></div>
         <div class="stat"><b class="stat-text">${fmtAvg(stat.visionSum, stat.visionN, VISION_LABEL)}</b><span>Visión país</span></div>
       </div>
-      ${stat.localidades.size ? `<p class="small muted">Localidades: ${Array.from(stat.localidades).slice(0, 8).join(" · ")}</p>` : ""}
+      ${localidadesHtml ? `<h4 style="margin-top:6px;">Localidades</h4>${localidadesHtml}` : ""}
       <h4 style="margin-top:18px;">Problemas más mencionados</h4>
       ${barList(problemas, maxP)}
       <h4 style="margin-top:18px;">Necesidades más mencionadas</h4>
@@ -199,15 +226,24 @@ window.MQD_MAP = (function () {
     const body = document.getElementById("sheetBody");
     let resetSelection = null;
 
-    function open(provinceId, onSelect) {
+    function open(provinceId, onSelect, highlightLocalidad) {
       const stat = data.byProvince[provinceId];
       if (!stat) return;
-      body.innerHTML = buildSheetContent(stat);
+      body.innerHTML = buildSheetContent(stat, highlightLocalidad);
       backdrop.classList.add("is-open");
       sheet.classList.add("is-open");
       document.body.style.overflow = "hidden";
       if (resetSelection) resetSelection();
       resetSelection = onSelect ? onSelect() : null;
+      if (highlightLocalidad) {
+        // Deja que el "sheet" termine de entrar antes de hacer scroll
+        // hasta la localidad buscada, si no el scroll queda pisado por la
+        // animación de apertura.
+        setTimeout(() => {
+          const target = body.querySelector(".locality-chip.is-target");
+          if (target) target.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 260);
+      }
     }
     function close() {
       backdrop.classList.remove("is-open");
@@ -221,6 +257,71 @@ window.MQD_MAP = (function () {
     document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
 
     return { open, close };
+  }
+
+  // Índice plano de todas las localidades presentes en los datos, con
+  // cuántas respuestas hay desde cada una y a qué provincia pertenecen —
+  // arma el desglose por ciudad: "localizar cada localidad presente".
+  function buildLocalityIndex(data) {
+    const index = [];
+    Object.values(data.byProvince).forEach((stat) => {
+      stat.localidades.forEach((count, nombre) => {
+        index.push({ nombre, count, provinceId: stat.id, provinceName: stat.name });
+      });
+    });
+    index.sort((a, b) => b.count - a.count);
+    return index;
+  }
+
+  // Buscador de localidades: tipear un nombre de ciudad/barrio y, al
+  // elegir un resultado, el mapa se centra en su provincia y se abre el
+  // detalle con esa localidad resaltada — así se puede "encontrar" una
+  // localidad puntual aunque el mapa en sí pinte por provincia.
+  function initLocalitySearch(data, goTo) {
+    const wrap = document.getElementById("localitySearch");
+    if (!wrap) return;
+    const input = wrap.querySelector("input");
+    const results = wrap.querySelector(".locality-results");
+    const index = buildLocalityIndex(data);
+
+    function render(items) {
+      if (!items.length) {
+        results.innerHTML = `<p class="empty-note">No encontramos ninguna localidad con ese nombre.</p>`;
+        results.hidden = false;
+        return;
+      }
+      results.innerHTML = items
+        .slice(0, 8)
+        .map(
+          (it) => `
+        <button type="button" class="locality-result" data-pid="${it.provinceId}" data-nombre="${it.nombre.replace(/"/g, "&quot;")}">
+          <span>${it.nombre}</span>
+          <span class="muted small">${it.provinceName} · ${it.count}</span>
+        </button>`
+        )
+        .join("");
+      results.hidden = false;
+    }
+
+    input.addEventListener("input", () => {
+      const q = window.MQD_normalize(input.value.trim());
+      if (q.length < 2) { results.hidden = true; results.innerHTML = ""; return; }
+      render(index.filter((it) => window.MQD_normalize(it.nombre).includes(q)));
+    });
+    input.addEventListener("focus", () => { if (input.value.trim().length >= 2) results.hidden = false; });
+
+    results.addEventListener("click", (e) => {
+      const btn = e.target.closest(".locality-result");
+      if (!btn) return;
+      goTo(btn.dataset.pid, btn.dataset.nombre);
+      results.hidden = true;
+      input.value = "";
+      input.blur();
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!wrap.contains(e.target)) results.hidden = true;
+    });
   }
 
   async function init() {
@@ -256,8 +357,9 @@ window.MQD_MAP = (function () {
 
     const sheet = initSheet(data);
     const navy = M.cssVar("--navy") || "#04537a";
+    const layersByProvince = {};
 
-    M.render(mapEl, geo, data, {
+    const mapInstance = M.render(mapEl, geo, data, {
       interactive: true,
       onFeatureClick: (pid, layer, resetStyle) => {
         sheet.open(pid, () => {
@@ -266,6 +368,32 @@ window.MQD_MAP = (function () {
           return resetStyle;
         });
       },
+      onFeatureReady: (pid, layer) => { layersByProvince[pid] = layer; },
+    });
+
+    // Ir a una localidad encontrada por el buscador: centra el mapa en su
+    // provincia y abre el detalle con esa localidad resaltada. No hay
+    // resetStyle "de fábrica" acá (eso solo lo arma render() al hacer
+    // clic), así que guardamos el estilo actual del distrito antes de
+    // resaltarlo, para poder devolvérselo tal cual al cerrar.
+    initLocalitySearch(data, (pid, nombre) => {
+      const layer = layersByProvince[pid];
+      if (layer) {
+        try {
+          if (layer.getBounds) mapInstance.fitBounds(layer.getBounds(), { padding: [40, 40], maxZoom: 7 });
+          else if (layer.getLatLng) mapInstance.setView(layer.getLatLng(), 6);
+        } catch (e) { /* noop */ }
+      }
+      sheet.open(pid, () => {
+        if (!layer || !layer.setStyle || !layer.options) return null;
+        const prevStyle = {
+          fillColor: layer.options.fillColor, fillOpacity: layer.options.fillOpacity,
+          color: layer.options.color, weight: layer.options.weight, dashArray: layer.options.dashArray,
+        };
+        layer.setStyle({ weight: 3, color: navy });
+        if (layer.bringToFront) layer.bringToFront();
+        return () => layer.setStyle(prevStyle);
+      }, nombre);
     });
   }
 
