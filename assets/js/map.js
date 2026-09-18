@@ -65,7 +65,7 @@ window.MQD_MAP = (function () {
       keyboard: interactive,
       tap: interactive,
       minZoom: 4,
-      maxZoom: 8,
+      maxZoom: 10,
       zoomSnap: 0.25,
       worldCopyJump: false,
     }).setView([-38.4, -63.6], 4);
@@ -89,8 +89,9 @@ window.MQD_MAP = (function () {
     // arriesgarse a un mapa roto o en blanco.
     function refit() {
       map.invalidateSize({ animate: false, pan: false });
-      if (geoLayer) {
-        try { map.fitBounds(geoLayer.getBounds(), { padding: [12, 12], animate: false }); } catch (e) { /* noop */ }
+      const bounds = map._mqdFocusBounds || (geoLayer && geoLayer.getBounds());
+      if (bounds) {
+        try { map.fitBounds(bounds, { padding: [12, 12], animate: false }); } catch (e) { /* noop */ }
       }
     }
 
@@ -122,6 +123,11 @@ window.MQD_MAP = (function () {
         resizeObserver.disconnect();
       });
     }
+
+    // Quien use el mapa (mapa.html, al enfocar una provincia con sus
+    // municipios) puede pisar esto para que un resize en medio de ese
+    // enfoque vuelva a encuadrar ahí en vez de al país entero.
+    map._mqdFocusBounds = null;
 
     const emptyFill = cssVar(EMPTY_VAR) || "#cde2fb";
 
@@ -200,6 +206,25 @@ window.MQD_MAP = (function () {
   const SITUACION_LABEL = { 1: "Muy mala", 2: "Mala", 3: "Regular", 4: "Buena", 5: "Muy buena" };
   const VISION_LABEL = { "-2": "Muy pesimista", "-1": "Pesimista", "0": "Neutral", "1": "Optimista", "2": "Muy optimista" };
 
+  // Divisiones internas (municipios/departamentos, y comunas en CABA) por
+  // provincia — solo se cargan al tocar esa provincia, nunca de entrada,
+  // así el mapa nacional sigue liviano. Fuente: IGN, vía el dataset
+  // público github.com/mgaitan/departamentos_argentina (simplificado acá
+  // para que cada provincia pese poco).
+  const DEPARTAMENTOS_URL = (provinceId) => `assets/data/departamentos/${provinceId}.geojson`;
+  const departamentosCache = {};
+
+  async function loadDepartamentos(provinceId) {
+    if (provinceId in departamentosCache) return departamentosCache[provinceId];
+    try {
+      const res = await fetch(DEPARTAMENTOS_URL(provinceId), { cache: "force-cache" });
+      departamentosCache[provinceId] = res.ok ? await res.json() : null;
+    } catch (e) {
+      departamentosCache[provinceId] = null;
+    }
+    return departamentosCache[provinceId];
+  }
+
   function fmtAvg(sum, n, labels) {
     if (!n) return "Sin datos aún";
     const avg = Math.round(sum / n);
@@ -273,7 +298,7 @@ window.MQD_MAP = (function () {
     `;
   }
 
-  function initSheet(data) {
+  function initSheet(data, onClose) {
     const backdrop = document.getElementById("sheetBackdrop");
     const sheet = document.getElementById("sheet");
     const body = document.getElementById("sheetBody");
@@ -303,6 +328,7 @@ window.MQD_MAP = (function () {
       sheet.classList.remove("is-open");
       document.body.style.overflow = "";
       if (resetSelection) { resetSelection(); resetSelection = null; }
+      if (onClose) onClose();
     }
 
     backdrop.addEventListener("click", close);
@@ -408,9 +434,48 @@ window.MQD_MAP = (function () {
     statProv.textContent = data.totalProvinces;
     statLoc.textContent = data.totalLocalidades;
 
-    const sheet = initSheet(data);
     const navy = M.cssVar("--navy") || "#04537a";
     const layersByProvince = {};
+
+    // Encuadre nacional "de fábrica", para poder volver a él cuando se
+    // cierra el detalle de una provincia enfocada.
+    const nationalBounds = geo ? L.geoJSON(geo).getBounds() : null;
+    let subLayer = null;
+
+    // Al tocar una provincia: además de abrir su ficha, la encuadra y le
+    // superpone sus municipios/departamentos (comunas en el caso de
+    // CABA) — recién ahí se cargan, así el mapa nacional arranca liviano.
+    // A esa escala nacional esas líneas internas serían invisibles de
+    // todos modos, por eso solo tienen sentido "activadas" acá adentro.
+    async function focusProvince(pid, layer) {
+      const geoSub = await loadDepartamentos(pid);
+      if (subLayer) { mapInstance.removeLayer(subLayer); subLayer = null; }
+      let bounds = null;
+      if (geoSub) {
+        subLayer = L.geoJSON(geoSub, {
+          interactive: false,
+          style: { fill: false, color: navy, weight: 1, opacity: 0.55 },
+        }).addTo(mapInstance);
+        bounds = subLayer.getBounds();
+      } else if (layer && layer.getBounds) {
+        bounds = layer.getBounds();
+      }
+      mapInstance._mqdFocusBounds = bounds;
+      try {
+        if (bounds && bounds.isValid()) mapInstance.fitBounds(bounds, { padding: [24, 24], maxZoom: 9 });
+        else if (layer && layer.getLatLng) mapInstance.setView(layer.getLatLng(), 9);
+      } catch (e) { /* noop */ }
+    }
+
+    function unfocusProvince() {
+      if (subLayer) { mapInstance.removeLayer(subLayer); subLayer = null; }
+      mapInstance._mqdFocusBounds = null;
+      if (nationalBounds) {
+        try { mapInstance.fitBounds(nationalBounds, { padding: [12, 12] }); } catch (e) { /* noop */ }
+      }
+    }
+
+    const sheet = initSheet(data, unfocusProvince);
 
     const mapInstance = M.render(mapEl, geo, data, {
       interactive: true,
@@ -420,23 +485,19 @@ window.MQD_MAP = (function () {
           if (layer.bringToFront) layer.bringToFront();
           return resetStyle;
         });
+        focusProvince(pid, layer);
       },
       onFeatureReady: (pid, layer) => { layersByProvince[pid] = layer; },
     });
 
-    // Ir a una localidad encontrada por el buscador: centra el mapa en su
-    // provincia y abre el detalle con esa localidad resaltada. No hay
-    // resetStyle "de fábrica" acá (eso solo lo arma render() al hacer
-    // clic), así que guardamos el estilo actual del distrito antes de
-    // resaltarlo, para poder devolvérselo tal cual al cerrar.
+    // Ir a una localidad encontrada por el buscador: enfoca su provincia
+    // (con sus municipios) y abre el detalle con esa localidad resaltada.
+    // No hay resetStyle "de fábrica" acá (eso solo lo arma render() al
+    // hacer clic), así que guardamos el estilo actual del distrito antes
+    // de resaltarlo, para poder devolvérselo tal cual al cerrar.
     initLocalitySearch(data, (pid, nombre) => {
       const layer = layersByProvince[pid];
-      if (layer) {
-        try {
-          if (layer.getBounds) mapInstance.fitBounds(layer.getBounds(), { padding: [40, 40], maxZoom: 7 });
-          else if (layer.getLatLng) mapInstance.setView(layer.getLatLng(), 6);
-        } catch (e) { /* noop */ }
-      }
+      if (layer) focusProvince(pid, layer);
       sheet.open(pid, () => {
         if (!layer || !layer.setStyle || !layer.options) return null;
         const prevStyle = {
