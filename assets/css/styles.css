@@ -736,7 +736,12 @@ button { font-family: inherit; }
    que la de comisiones (menos ancho máximo, ícono y textos más chicos):
    son 6 datos de una sola línea cada uno, no hace falta que ocupen tanto
    lugar — sobre todo en celular, donde antes se sentía demasiado grande. */
-.puzzle-grid--compact { max-width: 460px; }
+/* margin-top: en sintesis.html el rompecabezas de comisiones siempre
+   tiene el párrafo ".puzzle-intro" arriba, que ya deja aire antes de la
+   grilla — acá en cambio la grilla va pegada directo abajo del <h2>, y
+   el margin-bottom por default de los títulos (.5em) se sentía muy
+   poco contra un bloque de color tan grande. */
+.puzzle-grid--compact { max-width: 460px; margin-top: 20px; }
 .puzzle-grid--compact .puzzle-piece__icon { width: 20px; height: 20px; margin-bottom: 4px; }
 .puzzle-grid--compact .puzzle-piece__label { padding: 0 11%; }
 .puzzle-grid--compact .puzzle-piece__label b { font-size: 11px; -webkit-line-clamp: 3; }
