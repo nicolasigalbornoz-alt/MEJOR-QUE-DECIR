@@ -52,8 +52,6 @@
     return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
 
-  const FILE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>';
-
   // Actas de comisión subidas desde admin.html — no pasan por
   // MQD_DATA.load() (eso es solo para filas de la encuesta), así que se
   // piden acá directo con su propio fetch.
@@ -68,7 +66,12 @@
       const rows = Array.isArray(json && json.rows) ? json.rows : [];
       return rows
         .filter((r) => r && r[1] && r[3])
-        .map((r) => ({ comision: (r[1] || "").toString(), nombre: (r[2] || "").toString(), url: (r[3] || "").toString() }))
+        .map((r) => ({
+          comision: (r[1] || "").toString(),
+          nombre: (r[2] || "").toString(),
+          url: (r[3] || "").toString(),
+          resumen: (r[4] || "").toString(),
+        }))
         .reverse(); // más recientes primero (se guardan al final de la hoja)
     } catch (e) {
       return [];
@@ -146,28 +149,20 @@
       .join("");
   }
 
-  // El link que devuelve Drive (file.getUrl()) tiene forma
-  // .../file/d/<ID>/view?... — de ahí sacamos el ID para armar el link de
-  // vista previa embebible (.../file/d/<ID>/preview), que sí se puede
-  // meter en un iframe (a diferencia del link de "view" normal).
-  function driveEmbedUrl(url) {
-    const m = String(url || "").match(/\/d\/([a-zA-Z0-9_-]+)/);
-    return m ? `https://drive.google.com/file/d/${m[1]}/preview` : null;
-  }
-
+  // El documento en sí no se enlaza ni se embebe acá — cada comisión sube
+  // un resumen corto (ver admin.js/handleActaUpload) pensado justo para
+  // esto, así el informe muestra los puntos principales sin mandar a
+  // nadie a abrir un Word aparte.
   function actaBlockHtml(actasComision) {
     if (!actasComision.length) {
       return `<h4 style="margin-top:18px;">Acta de la comisión</h4><p class="empty-note">Todavía no se subió el acta de esta comisión.</p>`;
     }
     return `<h4 style="margin-top:18px;">Acta de la comisión</h4>${actasComision
-      .map((a) => {
-        const embedUrl = driveEmbedUrl(a.url);
-        return `
-        ${embedUrl ? `<div class="acta-embed-wrap"><iframe src="${embedUrl}" loading="lazy"></iframe></div>` : ""}
-        <a class="acta-embed-link" href="${escapeHtml(a.url)}" target="_blank" rel="noopener">
-          <span class="drive-item__icon">${FILE_ICON}</span> Ver acta completa (${escapeHtml(a.nombre)}) ↗
-        </a>`;
-      })
+      .map((a) =>
+        a.resumen
+          ? `<p class="acta-resumen">${escapeHtml(a.resumen)}</p>`
+          : `<p class="empty-note">Se subió el acta, pero todavía no tiene un resumen cargado.</p>`
+      )
       .join("")}`;
   }
 

@@ -33,6 +33,11 @@
   // texto normal pesa muchísimo menos que eso.
   const MAX_MB = 8;
   const WARN_MB = 3; // a partir de acá, avisamos que puede tardar
+  // La síntesis pública ya no enlaza ni embebe el documento subido, solo
+  // muestra este resumen — por eso tiene que entrar siempre en una sola
+  // pantalla. Mismo tope validado de nuevo en el servidor (ver
+  // RESUMEN_MAX_CHARS en Code.gs): nunca hay que confiar solo en este.
+  const RESUMEN_MAX_CHARS = 2000;
 
   // Lista compartida — ver assets/js/comisiones.js.
   const COMISIONES = window.MQD_COMISIONES;
@@ -173,15 +178,33 @@
       }
     });
 
+    // La síntesis pública muestra este resumen en vez del documento en
+    // sí (que igual queda subido a Drive, como respaldo) — por eso es
+    // obligatorio y tiene un tope de extensión, no un simple "opcional".
+    const resumenInput = el("textarea", {
+      class: "textarea", maxlength: String(RESUMEN_MAX_CHARS),
+      placeholder: "Los puntos principales de lo que se trabajó y se acordó en la comisión.",
+    });
+    const resumenCounter = el("div", { class: "field-counter" }, [text(`0/${RESUMEN_MAX_CHARS}`)]);
+    resumenInput.addEventListener("input", () => {
+      resumenCounter.textContent = `${resumenInput.value.length}/${RESUMEN_MAX_CHARS}`;
+    });
+
     const msg = el("div", { class: "form-msg" });
     const btn = el("button", { class: "btn btn-primary btn-block", type: "submit" }, [text("Subir acta")]);
 
     const fArchivo = fieldWrap("Archivo (Word)", fileInput, { key: "archivo", error: "Elegí un archivo." });
     fArchivo.appendChild(sizeHint);
+    const fResumen = fieldWrap("Resumen del acta", resumenInput, {
+      key: "resumen", error: "Escribí un resumen del acta.",
+      hint: "Esto es lo que se va a mostrar en la síntesis — no el documento completo, así que tiene que entrar en una sola pantalla.",
+    });
+    fResumen.appendChild(resumenCounter);
 
     const form = el("form", { novalidate: "novalidate" }, [
       fieldWrap("Comisión", selectWrap, { key: "comision", error: "Elegí tu comisión." }),
       fArchivo,
+      fResumen,
       el("div", { class: "survey-submit" }, [btn, msg]),
     ]);
 
@@ -193,9 +216,11 @@
 
       const comision = select.value;
       const file = fileInput.files[0];
+      const resumen = resumenInput.value.trim();
       form.querySelector('[data-field="comision"]').classList.toggle("has-error", !comision);
       form.querySelector('[data-field="archivo"]').classList.toggle("has-error", !file);
-      if (!comision || !file) return;
+      form.querySelector('[data-field="resumen"]').classList.toggle("has-error", !resumen);
+      if (!comision || !file || !resumen) return;
 
       if (file.size > MAX_MB * 1024 * 1024) {
         msg.textContent = `El archivo pesa más de ${MAX_MB}MB — probá con uno más liviano.`;
@@ -220,6 +245,7 @@
           archivoNombre: file.name,
           mimeType: file.type || "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
           archivoBase64,
+          resumen,
           // El servidor vuelve a chequear esto en cada subida, no solo en
           // el login — ver comentario junto a SESSION_KEY.
           usuario: session.usuario,
@@ -227,6 +253,7 @@
         });
         form.reset();
         sizeHint.style.display = "none";
+        resumenCounter.textContent = `0/${RESUMEN_MAX_CHARS}`;
         msg.textContent = "¡Listo! El acta ya se subió y va a aparecer en la síntesis.";
         msg.classList.add("is-visible", "success");
       } catch (err) {
