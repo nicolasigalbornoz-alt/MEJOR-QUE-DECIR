@@ -571,6 +571,12 @@ button { font-family: inherit; }
   border: 1px solid var(--hairline);
   box-shadow: var(--shadow-s);
   background: var(--surface-2);
+  /* Leaflet dibuja sus propios controles con z-index hasta 1000 — sin esto,
+     ese valor compite directamente contra el header (z-index: 50) en vez
+     de quedar contenido adentro del mapa, y al hacer scroll el mapa (con
+     sus controles +/-) termina pintándose por encima del header. */
+  position: relative;
+  z-index: 0;
 }
 
 /* ---------- Buscador de localidades (mapa.html) ---------- */
