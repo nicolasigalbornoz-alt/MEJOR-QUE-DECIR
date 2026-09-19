@@ -819,6 +819,21 @@ body[data-page="index"] .section-tight h2 { margin-bottom: 24px; }
 
 .sheet .acta-resumen { margin: 10px 0 0; font-size: 14px; color: var(--text-secondary); white-space: pre-line; }
 
+/* ---------- Documento de conclusión (sintesis.html) ---------- */
+#conclusionDoc { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+.conclusion-item {
+  padding: 14px 16px;
+  border-left: 3px solid var(--navy);
+  background: var(--surface-2);
+  border-radius: 0 12px 12px 0;
+}
+:root[data-theme="dark"] .conclusion-item { border-left-color: var(--sky); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .conclusion-item { border-left-color: var(--sky); }
+}
+.conclusion-item h4 { margin: 0 0 6px; font-size: 14.5px; }
+.conclusion-item p { margin: 0; font-size: 14px; color: var(--text-secondary); }
+
 /* ---------- Tags ---------- */
 .tag {
   display: inline-flex;
