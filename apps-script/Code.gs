@@ -467,7 +467,20 @@ function handleActaUpload(data) {
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
   const sheet = getOrCreateSheet(ACTAS_SHEET_NAME, ACTAS_HEADERS);
-  sheet.appendRow([new Date(), comision, nombreArchivo, file.getUrl(), resumen]);
+  const rowValues = [new Date(), comision, nombreArchivo, file.getUrl(), resumen];
+  // Si esa comisión ya tenía una fila, se actualiza en el lugar en vez de
+  // agregar una nueva — así, si la persona sube de nuevo su acta (para
+  // corregir el resumen, o porque un reintento automático del navegador
+  // por una falla de red hace que el mismo envío llegue más de una vez),
+  // no quedan filas duplicadas mostrando lo mismo repetido en la síntesis.
+  const comisionNorm = comision.toLowerCase();
+  const values = sheet.getDataRange().getValues();
+  let rowToUpdate = -1;
+  for (let i = 1; i < values.length; i++) {
+    if ((values[i][1] || "").toString().trim().toLowerCase() === comisionNorm) { rowToUpdate = i + 1; break; }
+  }
+  if (rowToUpdate > 0) sheet.getRange(rowToUpdate, 1, 1, rowValues.length).setValues([rowValues]);
+  else sheet.appendRow(rowValues);
   CacheService.getScriptCache().remove(ACTAS_CACHE_KEY);
 
   return { ok: true, url: file.getUrl() };
@@ -489,6 +502,16 @@ function handleActas() {
     // lista de actas muy larga para cachear: seguimos sin cache.
   }
   return jsonOutRaw(json);
+}
+
+// Igual que forzarRefrescoDeInforme, pero para la lista de actas: sirve
+// para que un cambio hecho a mano en la hoja "Actas" (por ejemplo, borrar
+// una fila duplicada) se vea en la síntesis al toque, sin esperar hasta
+// 20 minutos a que venza el cache solo. Ejecutar UNA VEZ desde acá
+// (▶ Ejecutar, elegir esta función arriba) después del cambio.
+function forzarRefrescoDeActas() {
+  CacheService.getScriptCache().remove(ACTAS_CACHE_KEY);
+  Logger.log("Listo: el próximo ?action=actas va a recalcular de cero.");
 }
 
 // ---------- Panel de cupos (comisiones y talleres) ----------
