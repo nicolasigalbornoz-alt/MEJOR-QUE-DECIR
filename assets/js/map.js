@@ -463,17 +463,14 @@ window.MQD_MAP = (function () {
     const navy = M.cssVar("--navy") || "#04537a";
     const layersByProvince = {};
 
-    // Encuadre nacional "de fábrica", para volver a él al cerrar el
-    // detalle de una provincia.
-    const nationalBounds = geo ? L.geoJSON(geo).getBounds() : null;
-
     // A partir de este zoom se muestran los municipios/departamentos de
     // lo que esté a la vista — a la escala nacional (zoom inicial 4) esas
-    // líneas internas serían invisibles de todos modos. No hace falta
-    // tocar una provincia puntual para activarlas: alcanza con hacer
-    // zoom (con los controles, pellizcando en el celular, o encuadrando
-    // por clic/buscador) y quedan prendidas para cualquier provincia que
-    // entre en la vista, y se apagan solas al volver a alejar.
+    // líneas internas serían invisibles de todos modos. Tocar una
+    // provincia NO las activa (solo abre su ficha, sin mover el mapa):
+    // alcanza con hacer zoom de verdad (con los controles, pellizcando en
+    // el celular, o yendo a una localidad desde el buscador) y quedan
+    // prendidas para cualquier provincia que entre en la vista, y se
+    // apagan solas al volver a alejar.
     const MIN_ZOOM_FOR_DEPARTAMENTOS = 6;
     const shownSubLayers = {}; // provinceId -> capa ya agregada al mapa
 
@@ -538,15 +535,13 @@ window.MQD_MAP = (function () {
       mapInstance._mqdSuppressAutoFocus = false;
     }
 
-    function unfocusProvince() {
-      if (nationalBounds) goTo(nationalBounds, null, 12);
-    }
+    const sheet = initSheet(data);
 
-    const sheet = initSheet(data, unfocusProvince);
-
-    // Encuadra en una provincia (al tocarla o desde el buscador) — los
+    // Encuadra en una provincia desde el buscador de localidades — los
     // municipios los prende/apaga solos syncSubBoundaries, enganchado al
-    // resultado de este mismo encuadre vía "zoomend"/"moveend".
+    // resultado de este mismo encuadre vía "zoomend"/"moveend". Tocar una
+    // provincia directamente en el mapa NO pasa por acá (ver
+    // onFeatureClick abajo): ahí solo se abre la ficha, sin mover el mapa.
     function goToProvince(layer) {
       if (layer && layer.getBounds) goTo(layer.getBounds(), null, 24);
       else if (layer && layer.getLatLng) goTo(null, layer.getLatLng());
@@ -560,7 +555,6 @@ window.MQD_MAP = (function () {
           if (layer.bringToFront) layer.bringToFront();
           return resetStyle;
         });
-        goToProvince(layer);
       },
       onFeatureReady: (pid, layer) => { layersByProvince[pid] = layer; },
     });
