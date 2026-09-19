@@ -21,6 +21,17 @@
 
   function norm(s) { return window.MQD_normalize(s); }
 
+  // Agrupa localidades "parecidas" para que no cuenten como distritos
+  // distintos en el mapa: mayúsculas/tildes ya las resuelve norm(), y acá
+  // además se toma solo el segmento antes de la primera coma o guión —
+  // así "Boulogne, San Isidro" agrupa por "Boulogne" (lo primero que puso
+  // la persona) y "Merlo - Libertad" por "Merlo", en vez de quedar cada
+  // una como una localidad aparte solo por el detalle extra que agregó.
+  function localidadKey(raw) {
+    const primary = (raw || "").split(/[,\-/]/)[0];
+    return norm(primary);
+  }
+
   function findKey(headers, includesAny) {
     return headers.find((h) => {
       const n = norm(h);
@@ -166,11 +177,26 @@
       return byComision[nombre];
     }
 
+    // provinceId -> Map<localidadKey, Map<textoOriginal, cantidad>> — se
+    // completa acá y se resuelve a b.localidades recién más abajo, en la
+    // segunda pasada, una vez que ya se vieron todas las respuestas de
+    // esa provincia.
+    const localidadVariants = {};
+
     for (const row of rows) {
       const b = byProvince[row.provinceId];
       if (!b) continue;
       b.count++;
-      if (row.localidad) b.localidades.set(row.localidad, (b.localidades.get(row.localidad) || 0) + 1);
+      if (row.localidad) {
+        const key = localidadKey(row.localidad);
+        if (key) {
+          let variantsForProvince = localidadVariants[row.provinceId];
+          if (!variantsForProvince) { variantsForProvince = new Map(); localidadVariants[row.provinceId] = variantsForProvince; }
+          let variantMap = variantsForProvince.get(key);
+          if (!variantMap) { variantMap = new Map(); variantsForProvince.set(key, variantMap); }
+          variantMap.set(row.localidad, (variantMap.get(row.localidad) || 0) + 1);
+        }
+      }
       if (row.situacionEscala != null) {
         b.situacionSum += row.situacionEscala; b.situacionN++;
         nacSituacion[String(row.situacionEscala)]++;
@@ -201,13 +227,58 @@
       }
     }
 
+    // Segunda pasada, ya con todas las variantes de cada provincia juntas:
+    // fusiona las que quedaron como una localidad más su calificativo sin
+    // coma ni guión de por medio (ej. "Lanús Este" adentro de "Lanús") —
+    // lo que arma localidadKey ya agrupó el resto (mayúsculas/tildes,
+    // y lo que sí tenía coma/guión). Se procesan las claves más cortas
+    // primero, así una localidad ya establecida absorbe a la que la
+    // nombra con algo agregado, y no al revés.
+    for (const provinceId of Object.keys(localidadVariants)) {
+      const variantsForProvince = localidadVariants[provinceId];
+      const keys = Array.from(variantsForProvince.keys()).sort((a, b) => a.length - b.length);
+      for (let i = 0; i < keys.length; i++) {
+        const shortKey = keys[i];
+        if (!variantsForProvince.has(shortKey)) continue; // ya la absorbieron a ella
+        for (let j = i + 1; j < keys.length; j++) {
+          const longKey = keys[j];
+          const longVariants = variantsForProvince.get(longKey);
+          if (!longVariants || !longKey.startsWith(shortKey + " ")) continue;
+          const shortVariants = variantsForProvince.get(shortKey);
+          longVariants.forEach((count, label) => {
+            shortVariants.set(label, (shortVariants.get(label) || 0) + count);
+          });
+          variantsForProvince.delete(longKey);
+        }
+      }
+
+      const b = byProvince[provinceId];
+      variantsForProvince.forEach((variantMap) => {
+        // De las variantes agrupadas bajo esta clave, se muestra la que
+        // más gente escribió tal cual (si empatan, la primera que
+        // apareció) — así "Moreno"/"MORENO"/"moreno" quedan mostradas
+        // con un solo nombre en vez de aparecer como localidades
+        // distintas.
+        let bestLabel = null, bestCount = -1, total = 0;
+        variantMap.forEach((count, label) => {
+          total += count;
+          if (count > bestCount) { bestCount = count; bestLabel = label; }
+        });
+        b.localidades.set(bestLabel, total);
+      });
+    }
+
     const provincesWithData = Object.values(byProvince).filter((p) => p.count > 0);
     const maxCount = Math.max(1, ...provincesWithData.map((p) => p.count));
+    // Suma de localidades ya agrupadas por provincia — no un Set global
+    // por nombre, porque dos provincias distintas bien pueden tener cada
+    // una su propia localidad con el mismo nombre (ej. "San Martín").
+    const totalLocalidades = Object.values(byProvince).reduce((n, p) => n + p.localidades.size, 0);
 
     return {
       totalResponses: rows.length,
       totalProvinces: provincesWithData.length,
-      totalLocalidades: new Set(rows.map((r) => norm(r.localidad)).filter(Boolean)).size,
+      totalLocalidades,
       byProvince, byComision, maxCount,
       nacProblemas, nacNecesidades, nacParticipa, nacVision, nacSituacion,
       rows,
