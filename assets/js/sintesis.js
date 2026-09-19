@@ -202,6 +202,10 @@
       comision: "Soberanía, tierra y defensa",
       texto: "La comisión planteó que la soberanía incluye defender los recursos naturales frente a quienes usurpan territorio nacional, con foco en Malvinas como proyección estratégica al Atlántico Sur y Gran Bretaña como el actor central del conflicto. Se propuso recuperar el concepto peronista de “nación en armas”, invertir en defensa para ganar margen de negociación, y advertir sobre los acuerdos de seguridad de Brasil y Chile con los británicos, que tensionan la idea de patria grande.",
     },
+    {
+      comision: "Educación",
+      texto: "El diagnóstico recorrió realidades muy distintas: alumnos que llegan a caballo a la escuela en San Juan, jardines que cierran por baja natalidad en Catamarca, y Corrientes con el salario docente más bajo del país tras 25 años del mismo gobierno provincial. La comisión coincidió en que la salida no pasa solo por más presupuesto, sino por un modelo de escuelas de oficio con arraigo provincial —tomando la experiencia sanjuanina— que frene la migración forzada de los jóvenes a las capitales en busca de futuro.",
+    },
   ];
 
   function buildConclusionDoc(el) {
