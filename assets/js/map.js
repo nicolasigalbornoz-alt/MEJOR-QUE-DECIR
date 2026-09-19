@@ -87,12 +87,28 @@ window.MQD_MAP = (function () {
     // mirando el mapa en ese momento: un resize de ventana en medio de
     // una sesión es raro, y es mejor perder ese zoom puntual que
     // arriesgarse a un mapa roto o en blanco.
+    // Mientras se re-encuadra desde acá (o desde una navegación a propósito
+    // — ver _mqdSuppressAutoFocus más abajo), "moveend" no debe pisar
+    // _mqdFocusBounds con el resultado: ese encuadre ya se guardó a mano
+    // ANTES de pedirlo, usando la forma geográfica real (el contorno de la
+    // provincia, o el país entero) en vez de los bordes de la ventana en
+    // pantalla en ese instante — que dependen del tamaño del contenedor y
+    // por eso van a variar un poco cada vez que se vuelva a medir mientras
+    // el resto de la página todavía se está acomodando (por ejemplo, justo
+    // al abrir la ficha de detalle). Si se dejara que cada moveend
+    // sobreescriba el encuadre guardado con esos bordes de pantalla, cada
+    // reintento de refit() terminaría encuadrando una forma levemente
+    // distinta a la anterior y la vista derivaría sola en vez de sostener
+    // siempre el mismo destino.
     function refit() {
+      map._mqdSuppressAutoFocus = true;
+      map.stop();
       map.invalidateSize({ animate: false, pan: false });
       const bounds = map._mqdFocusBounds || (geoLayer && geoLayer.getBounds());
       if (bounds) {
         try { map.fitBounds(bounds, { padding: [12, 12], animate: false }); } catch (e) { /* noop */ }
       }
+      map._mqdSuppressAutoFocus = false;
     }
 
     if (window.ResizeObserver) {
@@ -124,10 +140,20 @@ window.MQD_MAP = (function () {
       });
     }
 
-    // Quien use el mapa (mapa.html, al enfocar una provincia con sus
-    // municipios) puede pisar esto para que un resize en medio de ese
-    // enfoque vuelva a encuadrar ahí en vez de al país entero.
+    // Guarda el último encuadre a propósito: el país entero, una provincia
+    // recién enfocada (quien la use fija esto a mano, con su forma real,
+    // antes de pedir el encuadre — ver _mqdSuppressAutoFocus arriba), o
+    // donde sea que la persona haya hecho zoom/pan libremente con los
+    // dedos o los controles. Así, si el contenedor cambia de tamaño,
+    // refit() puede volver ahí en vez de resetear siempre a la vista
+    // nacional. _mqdSuppressAutoFocus lo pisa quien pida un encuadre a
+    // propósito (refit() o una navegación explícita) para que este
+    // "moveend" no lo sobreescriba con los bordes de pantalla del momento.
     map._mqdFocusBounds = null;
+    map._mqdSuppressAutoFocus = false;
+    map.on("moveend", () => {
+      if (!map._mqdSuppressAutoFocus) map._mqdFocusBounds = map.getBounds();
+    });
 
     const emptyFill = cssVar(EMPTY_VAR) || "#cde2fb";
 
@@ -437,45 +463,94 @@ window.MQD_MAP = (function () {
     const navy = M.cssVar("--navy") || "#04537a";
     const layersByProvince = {};
 
-    // Encuadre nacional "de fábrica", para poder volver a él cuando se
-    // cierra el detalle de una provincia enfocada.
+    // Encuadre nacional "de fábrica", para volver a él al cerrar el
+    // detalle de una provincia.
     const nationalBounds = geo ? L.geoJSON(geo).getBounds() : null;
-    let subLayer = null;
 
-    // Al tocar una provincia: además de abrir su ficha, la encuadra y le
-    // superpone sus municipios/departamentos (comunas en el caso de
-    // CABA) — recién ahí se cargan, así el mapa nacional arranca liviano.
-    // A esa escala nacional esas líneas internas serían invisibles de
-    // todos modos, por eso solo tienen sentido "activadas" acá adentro.
-    async function focusProvince(pid, layer) {
-      const geoSub = await loadDepartamentos(pid);
-      if (subLayer) { mapInstance.removeLayer(subLayer); subLayer = null; }
-      let bounds = null;
-      if (geoSub) {
-        subLayer = L.geoJSON(geoSub, {
+    // A partir de este zoom se muestran los municipios/departamentos de
+    // lo que esté a la vista — a la escala nacional (zoom inicial 4) esas
+    // líneas internas serían invisibles de todos modos. No hace falta
+    // tocar una provincia puntual para activarlas: alcanza con hacer
+    // zoom (con los controles, pellizcando en el celular, o encuadrando
+    // por clic/buscador) y quedan prendidas para cualquier provincia que
+    // entre en la vista, y se apagan solas al volver a alejar.
+    const MIN_ZOOM_FOR_DEPARTAMENTOS = 6;
+    const shownSubLayers = {}; // provinceId -> capa ya agregada al mapa
+
+    function clearSubBoundaries() {
+      Object.keys(shownSubLayers).forEach((pid) => {
+        mapInstance.removeLayer(shownSubLayers[pid]);
+        delete shownSubLayers[pid];
+      });
+    }
+
+    async function syncSubBoundaries() {
+      if (mapInstance.getZoom() < MIN_ZOOM_FOR_DEPARTAMENTOS) { clearSubBoundaries(); return; }
+
+      const viewBounds = mapInstance.getBounds();
+      const visiblePids = Object.keys(layersByProvince).filter((pid) => {
+        const layer = layersByProvince[pid];
+        try {
+          if (layer.getBounds) return layer.getBounds().intersects(viewBounds);
+          if (layer.getLatLng) return viewBounds.contains(layer.getLatLng());
+        } catch (e) { /* noop */ }
+        return false;
+      });
+
+      Object.keys(shownSubLayers).forEach((pid) => {
+        if (!visiblePids.includes(pid)) { mapInstance.removeLayer(shownSubLayers[pid]); delete shownSubLayers[pid]; }
+      });
+
+      for (const pid of visiblePids) {
+        if (shownSubLayers[pid]) continue;
+        const geoSub = await loadDepartamentos(pid);
+        // El zoom pudo volver a bajar (o esta misma provincia ya pudo
+        // quedar agregada por otro llamado) mientras se esperaba la carga.
+        if (!geoSub || shownSubLayers[pid] || mapInstance.getZoom() < MIN_ZOOM_FOR_DEPARTAMENTOS) continue;
+        shownSubLayers[pid] = L.geoJSON(geoSub, {
           interactive: false,
           style: { fill: false, color: navy, weight: 1, opacity: 0.55 },
         }).addTo(mapInstance);
-        bounds = subLayer.getBounds();
-      } else if (layer && layer.getBounds) {
-        bounds = layer.getBounds();
       }
-      mapInstance._mqdFocusBounds = bounds;
+    }
+
+    // Encuadra a propósito (al tocar una provincia, ir a una localidad
+    // buscada, o volver a la vista nacional al cerrar la ficha). Guarda
+    // ese destino ANTES de pedirlo, con su forma geográfica real (no los
+    // bordes de pantalla del momento — ver el comentario de
+    // _mqdSuppressAutoFocus en render(), dentro de MQD_MAP), y sin
+    // animación: así "moveend" dispara en el mismo instante en que se
+    // pide el encuadre, no unos cientos de ms después por una transición
+    // — si no, un refit() por resize disparado en el medio (típicamente
+    // al abrir/cerrar la ficha, que saca o pone la barra de scroll) podría
+    // pisarlo con un encuadre a medio asentar antes de que este termine.
+    function goTo(bounds, fallbackLatLng, padding) {
+      mapInstance._mqdSuppressAutoFocus = true;
       try {
-        if (bounds && bounds.isValid()) mapInstance.fitBounds(bounds, { padding: [24, 24], maxZoom: 9 });
-        else if (layer && layer.getLatLng) mapInstance.setView(layer.getLatLng(), 9);
+        if (bounds && bounds.isValid()) {
+          mapInstance._mqdFocusBounds = bounds;
+          mapInstance.fitBounds(bounds, { padding: [padding, padding], maxZoom: 9, animate: false });
+        } else if (fallbackLatLng) {
+          mapInstance.setView(fallbackLatLng, 9, { animate: false });
+          mapInstance._mqdFocusBounds = mapInstance.getBounds();
+        }
       } catch (e) { /* noop */ }
+      mapInstance._mqdSuppressAutoFocus = false;
     }
 
     function unfocusProvince() {
-      if (subLayer) { mapInstance.removeLayer(subLayer); subLayer = null; }
-      mapInstance._mqdFocusBounds = null;
-      if (nationalBounds) {
-        try { mapInstance.fitBounds(nationalBounds, { padding: [12, 12] }); } catch (e) { /* noop */ }
-      }
+      if (nationalBounds) goTo(nationalBounds, null, 12);
     }
 
     const sheet = initSheet(data, unfocusProvince);
+
+    // Encuadra en una provincia (al tocarla o desde el buscador) — los
+    // municipios los prende/apaga solos syncSubBoundaries, enganchado al
+    // resultado de este mismo encuadre vía "zoomend"/"moveend".
+    function goToProvince(layer) {
+      if (layer && layer.getBounds) goTo(layer.getBounds(), null, 24);
+      else if (layer && layer.getLatLng) goTo(null, layer.getLatLng());
+    }
 
     const mapInstance = M.render(mapEl, geo, data, {
       interactive: true,
@@ -485,19 +560,21 @@ window.MQD_MAP = (function () {
           if (layer.bringToFront) layer.bringToFront();
           return resetStyle;
         });
-        focusProvince(pid, layer);
+        goToProvince(layer);
       },
       onFeatureReady: (pid, layer) => { layersByProvince[pid] = layer; },
     });
 
-    // Ir a una localidad encontrada por el buscador: enfoca su provincia
-    // (con sus municipios) y abre el detalle con esa localidad resaltada.
-    // No hay resetStyle "de fábrica" acá (eso solo lo arma render() al
-    // hacer clic), así que guardamos el estilo actual del distrito antes
-    // de resaltarlo, para poder devolvérselo tal cual al cerrar.
+    mapInstance.on("zoomend moveend", syncSubBoundaries);
+
+    // Ir a una localidad encontrada por el buscador: encuadra en su
+    // provincia y abre el detalle con esa localidad resaltada. No hay
+    // resetStyle "de fábrica" acá (eso solo lo arma render() al hacer
+    // clic), así que guardamos el estilo actual del distrito antes de
+    // resaltarlo, para poder devolvérselo tal cual al cerrar.
     initLocalitySearch(data, (pid, nombre) => {
       const layer = layersByProvince[pid];
-      if (layer) focusProvince(pid, layer);
+      if (layer) goToProvince(layer);
       sheet.open(pid, () => {
         if (!layer || !layer.setStyle || !layer.options) return null;
         const prevStyle = {
