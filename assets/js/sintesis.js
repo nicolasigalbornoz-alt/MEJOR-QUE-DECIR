@@ -166,6 +166,51 @@
       .join("")}`;
   }
 
+  // ---------- Documento de conclusión ----------
+  // A diferencia del resumen por comisión de arriba (uno por acta, tal
+  // cual lo carga cada responsable en admin.html), esto es una lectura
+  // más editorial: el punto más importante de cada acta completa, puesto
+  // en común. No sale de ninguna hoja de cálculo ni se recalcula solo —
+  // se redacta a mano a medida que van llegando las actas y se actualiza
+  // este archivo cuando corresponda.
+  const CONCLUSIONES = [
+    {
+      comision: "Inteligencia artificial, plataformas y poder: una mirada desde el Sur Global",
+      texto: "La discusión trascendió lo técnico: qué funciones humanas —criterio, decisión, vínculos— estamos dispuestos a delegar en la IA, y qué lugar deben conservar la familia, la escuela y el Estado frente a las infancias. El desafío para Argentina es construir soberanía de datos, infraestructura y modelos propios, sin resignar que el progreso tecnológico esté subordinado a la persona y a la justicia social.",
+    },
+    {
+      comision: "Vivienda, hábitat y urbanismo",
+      texto: "El costo del alquiler varía drásticamente según el territorio (de $300.000 en la periferia cordobesa a $1.000.000 en CABA), y el acceso al crédito sigue siendo la experiencia de unos pocos. Se propuso articular al Estado con organizaciones como Techo, fortalecer cooperativas de vivienda y planificar las intervenciones a partir del mapa de barrios populares.",
+    },
+    {
+      comision: "Seguridad",
+      texto: "La inseguridad no es solo un déficit policial: la reincidencia de menores ligada al narcomenudeo, los tiempos judiciales que no acompañan la urgencia, y la desconfianza que lleva a organizarse por WhatsApp en vez de llamar al 911 muestran un entramado que exige coordinación entre Nación, provincias y municipios, no solo más patrulleros.",
+    },
+    {
+      comision: "Modelo de desarrollo, producción y federalismo",
+      texto: "Las provincias mineras (litio, oro, cobre) reciben regalías mínimas y no logran desarrollar proveedores ni ingenieros propios, mientras la falta de inversión portuaria y ferroviaria empuja a los jóvenes del interior a migrar a Buenos Aires por trabajo. El reclamo transversal es una estrategia productiva federal que no dependa solo de la coparticipación.",
+    },
+    {
+      comision: "Salud mental",
+      texto: "El malestar juvenil no es un problema privado: se acumula entre desempleo, deserción escolar, adicciones y, en su expresión más extrema, el suicidio adolescente. La comisión pidió proteger los espacios de encuentro comunitario (clubes, comedores, centros culturales) como red de contención que el Estado debe sostener, no solo fortalecer los servicios de salud mental cuando el síntoma ya apareció.",
+    },
+    {
+      comision: "Militancia en el siglo XXI",
+      texto: "Lo que más aleja a los jóvenes de la política no es la falta de ganas, sino sentirse usados: la “política de la foto”, el “todavía sos muy joven” y los cargos que llegan sin formación real. La comisión coincidió en que redes y territorio se complementan, pero que sin formar cuadros —no solo militantes— la renovación generacional queda en el discurso.",
+    },
+  ];
+
+  function buildConclusionDoc(el) {
+    if (!el) return;
+    el.innerHTML = CONCLUSIONES.map(
+      (c) => `
+      <div class="conclusion-item">
+        <h4>${escapeHtml(c.comision)}</h4>
+        <p>${escapeHtml(c.texto)}</p>
+      </div>`
+    ).join("");
+  }
+
   function buildComisionSheetContent(nombre, data, actas) {
     const stat = data.byComision[nombre];
     const actasComision = actas.filter((a) => a.comision === nombre);
@@ -283,9 +328,8 @@
     if (visionAvgKey != null) {
       parts.push(
         `<p>Respecto al futuro del país, el clima general entre quienes respondieron es
-        <b>${VISION_LABEL[String(visionAvgKey)]}</b>. La visión del país no es uniforme: conviven
-        distritos con mirada más optimista con otros donde predomina el escepticismo, lo que
-        confirma que "mejor que decir" hace falta escuchar antes de proponer.</p>`
+        <b>${VISION_LABEL[String(visionAvgKey)]}</b>, aunque la mirada no es uniforme: conviven
+        distritos con una mirada más optimista con otros donde predomina el escepticismo.</p>`
       );
     }
     return parts.join("");
@@ -314,6 +358,10 @@
 
   async function init() {
     const banner = document.getElementById("dataBanner");
+    // No depende de la encuesta ni de las actas: se muestra apenas carga
+    // la página, sin esperar a que responda el backend.
+    buildConclusionDoc(document.getElementById("conclusionDoc"));
+
     const [data, actas] = await Promise.all([window.MQD_DATA.load(), loadActas()]);
 
     const puzzleGrid = document.getElementById("puzzleGrid");
