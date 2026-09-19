@@ -1156,4 +1156,40 @@ blockquote.testimonio footer {
   body { background: #fff; padding: 14mm 14mm; }
   .section { padding-block: 6px; }
   .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+
+  /* El documento descargado/impreso siempre en modo claro, sin importar
+     si quien lo genera tiene el sitio en oscuro (por sistema o elegido a
+     mano): son las mismas variables que redefinen el modo oscuro más
+     arriba, vueltas a su valor claro acá — con la misma especificidad que
+     esas reglas (:root[data-theme="dark"] y :root:not([data-theme="light"])
+     bajo prefers-color-scheme) para poder ganarles, ya que al ser más
+     tarde en la hoja alcanza con igualar la especificidad. Sin esto, un
+     PDF generado en modo oscuro queda con tarjetas y textos pensados para
+     fondo negro puestos sobre la página blanca que fuerza @page.
+  */
+  :root,
+  :root[data-theme="dark"],
+  :root:not([data-theme="light"]) {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #ffffff;
+    --surface-2: #f3f6f7;
+    --text-primary: #0b1720;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --hairline: #e1e0d9;
+    --border: rgba(11, 23, 32, 0.10);
+    --navy-050: #eaf3f7;
+    --sky-050: #eaf7fd;
+    --sky-100: #d4eefb;
+    --div-mid: #f0efec;
+    --shadow-m: 0 8px 24px rgba(4, 83, 122, 0.10), 0 2px 6px rgba(4, 83, 122, 0.06);
+  }
+
+  /* La hoja deslizable (detalle de provincia/comisión) es position:fixed
+     — Chrome la repite en cada página al imprimir en vez de respetar que
+     está cerrada, así que en el PDF aparecía como una tira flotante en
+     el medio del documento. No tiene sentido en algo que no se puede
+     tocar, así que se saca directamente. */
+  .sheet-backdrop, .sheet { display: none !important; }
 }
