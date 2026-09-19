@@ -84,7 +84,7 @@
       <div class="site-footer__inner">
         <img src="assets/img/jovenesfr-logo.png" alt="Jóvenes FR" />
         <small>
-          MEJOR QUE DECIR — un proyecto de escucha de ${cfg.eventoNombre || "Jóvenes FR"}.<br />
+          MEJOR QUE DECIR — un proyecto de escucha del ${cfg.eventoNombre || "encuentro de Jóvenes FR"}.<br />
           Datos recolectados el ${cfg.eventoFecha || ""} con consentimiento de cada participante.
         </small>
         <a class="site-footer__admin" href="admin.html">Panel de administración</a>

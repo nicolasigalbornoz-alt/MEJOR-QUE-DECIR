@@ -74,19 +74,16 @@
       const list = document.getElementById("driveList");
       list.innerHTML = DRIVE_ITEMS.map((item, i) => {
         const isFolder = item.type === "folder";
-        const openUrl = isFolder
-          ? `https://drive.google.com/drive/folders/${item.id}`
-          : `https://drive.google.com/file/d/${item.id}/view`;
         const embedUrl = isFolder
           ? `https://drive.google.com/embeddedfolderview?id=${item.id}#grid`
           : `https://drive.google.com/file/d/${item.id}/preview`;
         return `
           <div class="card drive-item">
             <div class="drive-item__head">
-              <a class="drive-item__title" href="${openUrl}" target="_blank" rel="noopener">
+              <span class="drive-item__title">
                 <span class="drive-item__icon">${isFolder ? folderIcon : fileIcon}</span>
-                ${item.label} ↗
-              </a>
+                ${item.label}
+              </span>
               <button type="button" class="drive-item__toggle" data-embed="${embedUrl}" data-index="${i}">
                 Ver contenido
               </button>
