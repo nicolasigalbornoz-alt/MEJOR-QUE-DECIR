@@ -198,6 +198,10 @@
       comision: "Militancia en el siglo XXI",
       texto: "Lo que más aleja a los jóvenes de la política no es la falta de ganas, sino sentirse usados: la “política de la foto”, el “todavía sos muy joven” y los cargos que llegan sin formación real. La comisión coincidió en que redes y territorio se complementan, pero que sin formar cuadros —no solo militantes— la renovación generacional queda en el discurso.",
     },
+    {
+      comision: "Soberanía, tierra y defensa",
+      texto: "La comisión planteó que la soberanía incluye defender los recursos naturales frente a quienes usurpan territorio nacional, con foco en Malvinas como proyección estratégica al Atlántico Sur y Gran Bretaña como el actor central del conflicto. Se propuso recuperar el concepto peronista de “nación en armas”, invertir en defensa para ganar margen de negociación, y advertir sobre los acuerdos de seguridad de Brasil y Chile con los británicos, que tensionan la idea de patria grande.",
+    },
   ];
 
   function buildConclusionDoc(el) {
