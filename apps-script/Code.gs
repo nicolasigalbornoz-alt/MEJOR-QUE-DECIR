@@ -94,7 +94,13 @@ const PENDING_COUNT_KEY = "mqd_pending_count_v1";
 const ACTAS_SHEET_NAME = "Actas"; // hoja única con el registro de actas subidas
 const ACTAS_FOLDER_NAME = "Actas de comisiones — Mejor que decir"; // carpeta de Drive (se crea sola)
 const ACTAS_CACHE_KEY = "mqd_actas_json_v1";
-const ACTAS_HEADERS = ["Marca temporal", "Comisión", "Nombre de archivo", "Link"];
+const ACTAS_HEADERS = ["Marca temporal", "Comisión", "Nombre de archivo", "Link", "Resumen"];
+// El sitio público (síntesis) ya no muestra ni enlaza el documento — solo
+// este resumen, así que tiene que entrar siempre en una sola pantalla/hoja.
+// Mismo tope que valida admin.js del lado del navegador (ver RESUMEN_MAX_CHARS
+// ahí); acá se vuelve a cortar por si acaso, nunca hay que confiar solo en
+// el límite del lado del cliente.
+const RESUMEN_MAX_CHARS = 2000;
 
 function doGet(e) {
   const action = (e.parameter.action || "").toLowerCase();
@@ -446,19 +452,22 @@ function handleActaUpload(data) {
   const nombreArchivo = (data.archivoNombre || "acta.docx").toString().trim();
   const mimeType = (data.mimeType || "application/vnd.openxmlformats-officedocument.wordprocessingml.document").toString();
   const base64 = (data.archivoBase64 || "").toString();
+  const resumen = (data.resumen || "").toString().trim().slice(0, RESUMEN_MAX_CHARS);
   if (!comision) throw new Error("Falta indicar la comisión.");
   if (!base64) throw new Error("Falta el archivo.");
+  if (!resumen) throw new Error("Falta el resumen del acta.");
 
   const bytes = Utilities.base64Decode(base64);
   const blob = Utilities.newBlob(bytes, mimeType, nombreArchivo);
+  // El archivo en sí queda guardado en Drive como respaldo, pero ya no se
+  // enlaza ni se embebe en el sitio público — ahí solo se muestra
+  // "resumen" (ver handleActas/sintesis.js). Sigue compartido para quien
+  // necesite abrirlo a mano desde la propia carpeta de Drive.
   const file = getActasFolder().createFile(blob);
-  // Cualquiera con el link puede VER/descargar (no editar) — así el
-  // informe final puede enlazar el acta sin que el visitante necesite
-  // iniciar sesión con una cuenta de Google.
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
   const sheet = getOrCreateSheet(ACTAS_SHEET_NAME, ACTAS_HEADERS);
-  sheet.appendRow([new Date(), comision, nombreArchivo, file.getUrl()]);
+  sheet.appendRow([new Date(), comision, nombreArchivo, file.getUrl(), resumen]);
   CacheService.getScriptCache().remove(ACTAS_CACHE_KEY);
 
   return { ok: true, url: file.getUrl() };
