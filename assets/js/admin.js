@@ -197,7 +197,7 @@
     fArchivo.appendChild(sizeHint);
     const fResumen = fieldWrap("Resumen del acta", resumenInput, {
       key: "resumen", error: "Escribí un resumen del acta.",
-      hint: "Esto es lo que se va a mostrar en la síntesis — no el documento completo, así que tiene que entrar en una sola pantalla.",
+      hint: "Esto es lo que se va a mostrar en la síntesis (no el documento completo), así que tiene que entrar en una sola pantalla.",
     });
     fResumen.appendChild(resumenCounter);
 
@@ -223,7 +223,7 @@
       if (!comision || !file || !resumen) return;
 
       if (file.size > MAX_MB * 1024 * 1024) {
-        msg.textContent = `El archivo pesa más de ${MAX_MB}MB — probá con uno más liviano.`;
+        msg.textContent = `El archivo pesa más de ${MAX_MB}MB, probá con uno más liviano.`;
         msg.classList.add("is-visible", "error");
         return;
       }
@@ -267,7 +267,7 @@
           msg.textContent = "No pudimos subir el archivo: " + err.message;
         } else {
           msg.textContent = file.size > WARN_MB * 1024 * 1024
-            ? "No pudimos subir el archivo. Con archivos pesados a veces falla — probá de nuevo, o con uno más liviano si se repite."
+            ? "No pudimos subir el archivo. Con archivos pesados a veces falla, probá de nuevo, o con uno más liviano si se repite."
             : "No pudimos subir el archivo (revisá tu conexión) e intentá de nuevo.";
         }
         msg.classList.add("is-visible", "error");

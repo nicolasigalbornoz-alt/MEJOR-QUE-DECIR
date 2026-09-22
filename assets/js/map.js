@@ -297,7 +297,7 @@ window.MQD_MAP = (function () {
     const quotesHtml = quotes.length
       ? quotes
           .map(
-            (q) => `<blockquote class="testimonio">"${q.text}"${q.localidad ? `<footer>— ${q.localidad}</footer>` : ""}</blockquote>`
+            (q) => `<blockquote class="testimonio">"${q.text}"${q.localidad ? `<footer>(${q.localidad})</footer>` : ""}</blockquote>`
           )
           .join("")
       : "";
@@ -456,7 +456,7 @@ window.MQD_MAP = (function () {
     banner.classList.remove("skeleton");
     if (data.isDemo) {
       banner.classList.add("demo");
-      banner.innerHTML = `<span class="dot"></span> Mostrando datos de ejemplo — se reemplazan automáticamente al conectar el backend.`;
+      banner.innerHTML = `<span class="dot"></span> Mostrando datos de ejemplo (se reemplazan automáticamente al conectar el backend).`;
     } else if (data.empty) {
       banner.classList.add("demo");
       banner.innerHTML = `<span class="dot"></span> Todavía no llegaron respuestas del formulario.`;

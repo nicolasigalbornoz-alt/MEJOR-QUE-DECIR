@@ -62,7 +62,7 @@
 
     return `
       <div class="site-header__bar">
-        <a class="brand" href="index.html" aria-label="MEJOR QUE DECIR — Inicio">
+        <a class="brand" href="index.html" aria-label="MEJOR QUE DECIR, Inicio">
           <img class="brand__logo" src="assets/img/jovenesfr-logo.png" alt="Jóvenes FR" />
           <span class="brand__title">MEJOR&nbsp;QUE&nbsp;DECIR</span>
         </a>
@@ -84,7 +84,7 @@
       <div class="site-footer__inner">
         <img src="assets/img/jovenesfr-logo.png" alt="Jóvenes FR" />
         <small>
-          MEJOR QUE DECIR — un proyecto de escucha del ${cfg.eventoNombre || "encuentro de Jóvenes FR"}.<br />
+          MEJOR QUE DECIR, un proyecto de escucha del ${cfg.eventoNombre || "encuentro de Jóvenes FR"}.<br />
           Datos recolectados el ${cfg.eventoFecha || ""} con consentimiento de cada participante.
         </small>
         <a class="site-footer__admin" href="admin.html">Panel de administración</a>
