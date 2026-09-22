@@ -1146,16 +1146,35 @@ blockquote.testimonio footer {
 @keyframes shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
 
 @media print {
-  /* margin:0 en @page es lo que hace que Chrome deje de agregar su propio
-     encabezado/pie (fecha, título de la pestaña, URL) al imprimir o
-     guardar como PDF — esa franja sale del margen de la página, así que
-     sin margen no tiene dónde dibujarse. Reponemos el espacio a mano con
-     padding en el body, para que el contenido no quede pegado al borde. */
-  @page { margin: 0; }
+  /* Tamaño de página fijo en A4 (si no se declara, cada máquina imprime
+     con el tamaño de papel que tenga configurado por sistema —
+     típicamente Carta en instalaciones en inglés) y un margen real de
+     página, no un padding del body: un padding solo se aplica una vez,
+     al principio y al final de todo el documento, así que con un
+     documento de varias hojas cada salto de página quedaba sin ningún
+     margen propio y el contenido tocaba el borde de la hoja siguiente
+     (o se cortaba a mitad de un bloque). @page margin, en cambio, se
+     repite en cada hoja del PDF, así que ahora todas quedan con el
+     mismo respiro arriba, abajo y a los costados. */
+  @page { size: A4; margin: 16mm 14mm; }
   .site-header, .site-footer, .no-print { display: none !important; }
-  body { background: #fff; padding: 14mm 14mm; }
+  body { background: #fff; }
   .section { padding-block: 6px; }
   .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+
+  /* Evita que un salto de página caiga a mitad de una tarjeta, una cita,
+     una fila de barra o una pieza del rompecabezas: si no entra entera
+     en lo que queda de la hoja, se mueve completa a la siguiente en vez
+     de cortarse — así se genera de forma natural el espacio en blanco
+     al final de cada hoja ("el margen entre hoja y hoja"), en vez de
+     dejar contenido pegado al corte. Los títulos, aparte, nunca quedan
+     solos al pie de una hoja separados del texto que les sigue. */
+  h1, h2, h3, h4 { break-after: avoid; page-break-after: avoid; }
+  .stat-row, .stat, .bar-row, .diverging, .tag-row, .puzzle-grid,
+  .conclusion-item, blockquote.testimonio, .acta-resumen {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
 
   /* El documento descargado/impreso siempre en modo claro, sin importar
      si quien lo genera tiene el sitio en oscuro (por sistema o elegido a
