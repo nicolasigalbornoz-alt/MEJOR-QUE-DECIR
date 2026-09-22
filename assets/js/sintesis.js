@@ -23,27 +23,51 @@
 
   function pct(n, total) { return total ? Math.round((n / total) * 100) : 0; }
 
+  // Redondear cada porcentaje por separado (Math.round de cada uno,
+  // independiente del resto) puede dar una suma de 99% o 101% — cada
+  // valor individual es "correcto", pero juntos no cierran en 100%,
+  // lo cual llama la atención en un gráfico que se lee como el 100% de
+  // las respuestas. El método del resto mayor reparte los puntos
+  // enteros primero por piso (Math.floor) y después asigna los puntos
+  // que faltan para llegar a 100 a los valores con mayor parte
+  // decimal descartada, así la suma da exacto sin alejarse del
+  // redondeo natural de cada uno.
+  function roundToTotalPct(counts, total) {
+    if (!total) return counts.map(() => 0);
+    const raw = counts.map((n) => (Math.max(0, n) / total) * 100);
+    const result = raw.map(Math.floor);
+    let missing = 100 - result.reduce((a, b) => a + b, 0);
+    const byRemainder = raw
+      .map((v, i) => [v - Math.floor(v), i])
+      .sort((a, b) => b[0] - a[0]);
+    for (let k = 0; k < missing; k++) result[byRemainder[k][1]]++;
+    return result;
+  }
+
   function renderDiverging(el, nacVision, total) {
     const neg2 = nacVision["-2"] || 0, neg1 = nacVision["-1"] || 0;
     const neutral = nacVision["0"] || 0;
     const pos1 = nacVision["1"] || 0, pos2 = nacVision["2"] || 0;
-    const seg = (n) => Math.max(0, pct(n, total));
+    const [segNeg2, segNeg1, segNeutral, segPos1, segPos2] = roundToTotalPct(
+      [neg2, neg1, neutral, pos1, pos2],
+      total
+    );
     el.innerHTML = `
       <div class="diverging-row">
         <div class="diverging-track" role="img" aria-label="Distribución de visión sobre el país">
-          <div class="diverging-fill-neg" style="width:${seg(neg2)}%; background:var(--div-warm)"></div>
-          <div class="diverging-fill-neg" style="width:${seg(neg1)}%; background:#f2a7a6"></div>
+          <div class="diverging-fill-neg" style="width:${segNeg2}%; background:var(--div-warm)"></div>
+          <div class="diverging-fill-neg" style="width:${segNeg1}%; background:#f2a7a6"></div>
           <div class="diverging-spacer"></div>
-          <div class="diverging-fill-pos" style="width:${seg(pos1)}%; background:var(--seq-250)"></div>
-          <div class="diverging-fill-pos" style="width:${seg(pos2)}%; background:var(--div-cool)"></div>
+          <div class="diverging-fill-pos" style="width:${segPos1}%; background:var(--seq-250)"></div>
+          <div class="diverging-fill-pos" style="width:${segPos2}%; background:var(--div-cool)"></div>
         </div>
       </div>
       <div class="tag-row small">
-        <span class="tag" style="background:var(--div-warm);color:#fff">Muy pesimista ${seg(neg2)}%</span>
-        <span class="tag" style="background:#f2a7a6;color:#7a1f1e">Pesimista ${seg(neg1)}%</span>
-        <span class="tag">Neutral ${seg(neutral)}%</span>
-        <span class="tag" style="background:var(--seq-250);color:var(--navy-700)">Optimista ${seg(pos1)}%</span>
-        <span class="tag" style="background:var(--div-cool);color:#fff">Muy optimista ${seg(pos2)}%</span>
+        <span class="tag" style="background:var(--div-warm);color:#fff">Muy pesimista ${segNeg2}%</span>
+        <span class="tag" style="background:#f2a7a6;color:#7a1f1e">Pesimista ${segNeg1}%</span>
+        <span class="tag">Neutral ${segNeutral}%</span>
+        <span class="tag" style="background:var(--seq-250);color:var(--navy-700)">Optimista ${segPos1}%</span>
+        <span class="tag" style="background:var(--div-cool);color:#fff">Muy optimista ${segPos2}%</span>
       </div>
     `;
   }
