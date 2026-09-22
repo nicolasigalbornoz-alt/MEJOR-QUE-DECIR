@@ -176,7 +176,7 @@
   const CONCLUSIONES = [
     {
       comision: "Inteligencia artificial, plataformas y poder: una mirada desde el Sur Global",
-      texto: "La discusión trascendió lo técnico: qué funciones humanas —criterio, decisión, vínculos— estamos dispuestos a delegar en la IA, y qué lugar deben conservar la familia, la escuela y el Estado frente a las infancias. El desafío para Argentina es construir soberanía de datos, infraestructura y modelos propios, sin resignar que el progreso tecnológico esté subordinado a la persona y a la justicia social.",
+      texto: "La discusión trascendió lo técnico: qué funciones humanas (criterio, decisión, vínculos) estamos dispuestos a delegar en la IA, y qué lugar deben conservar la familia, la escuela y el Estado frente a las infancias. El desafío para Argentina es construir soberanía de datos, infraestructura y modelos propios, sin resignar que el progreso tecnológico esté subordinado a la persona y a la justicia social.",
     },
     {
       comision: "Vivienda, hábitat y urbanismo",
@@ -196,7 +196,7 @@
     },
     {
       comision: "Militancia en el siglo XXI",
-      texto: "Lo que más aleja a los jóvenes de la política no es la falta de ganas, sino sentirse usados: la “política de la foto”, el “todavía sos muy joven” y los cargos que llegan sin formación real. La comisión coincidió en que redes y territorio se complementan, pero que sin formar cuadros —no solo militantes— la renovación generacional queda en el discurso.",
+      texto: "Lo que más aleja a los jóvenes de la política no es la falta de ganas, sino sentirse usados: la “política de la foto”, el “todavía sos muy joven” y los cargos que llegan sin formación real. La comisión coincidió en que redes y territorio se complementan, pero que sin formar cuadros (no solo militantes) la renovación generacional queda en el discurso.",
     },
     {
       comision: "Soberanía, tierra y defensa",
@@ -204,7 +204,7 @@
     },
     {
       comision: "Educación",
-      texto: "El diagnóstico recorrió realidades muy distintas: alumnos que llegan a caballo a la escuela en San Juan, jardines que cierran por baja natalidad en Catamarca, y Corrientes con el salario docente más bajo del país tras 25 años del mismo gobierno provincial. La comisión coincidió en que la salida no pasa solo por más presupuesto, sino por un modelo de escuelas de oficio con arraigo provincial —tomando la experiencia sanjuanina— que frene la migración forzada de los jóvenes a las capitales en busca de futuro.",
+      texto: "El diagnóstico recorrió realidades muy distintas: alumnos que llegan a caballo a la escuela en San Juan, jardines que cierran por baja natalidad en Catamarca, y Corrientes con el salario docente más bajo del país tras 25 años del mismo gobierno provincial. La comisión coincidió en que la salida no pasa solo por más presupuesto, sino por un modelo de escuelas de oficio con arraigo provincial (tomando la experiencia sanjuanina) que frene la migración forzada de los jóvenes a las capitales en busca de futuro.",
     },
   ];
 
@@ -240,7 +240,7 @@
     const quotesHtml = stat.quotes.length
       ? stat.quotes
           .map(
-            (q) => `<blockquote class="testimonio">"${escapeHtml(q.text)}"<footer>— ${q.localidad ? escapeHtml(q.localidad) + ", " : ""}${escapeHtml(q.provincia || "")}</footer></blockquote>`
+            (q) => `<blockquote class="testimonio">"${escapeHtml(q.text)}"<footer>(${q.localidad ? escapeHtml(q.localidad) + ", " : ""}${escapeHtml(q.provincia || "")})</footer></blockquote>`
           )
           .join("")
       : "";
@@ -384,7 +384,7 @@
     banner.classList.remove("skeleton");
     if (data.isDemo) {
       banner.classList.add("demo");
-      banner.innerHTML = `<span class="dot"></span> Documento generado con datos de ejemplo — se actualiza solo al conectar el backend.`;
+      banner.innerHTML = `<span class="dot"></span> Documento generado con datos de ejemplo (se actualiza solo al conectar el backend).`;
     } else if (data.empty) {
       banner.classList.add("demo");
       banner.innerHTML = `<span class="dot"></span> Todavía no llegaron respuestas del formulario.`;
@@ -419,7 +419,7 @@
     Object.values(data.byProvince).forEach((p) => p.quotes.forEach((q) => quotes.push({ ...q, provincia: p.name })));
     const sample = quotes.sort(() => 0.5 - Math.random()).slice(0, 6);
     document.getElementById("quotesList").innerHTML = sample.length
-      ? sample.map((q) => `<blockquote class="testimonio">"${q.text}"<footer>— ${q.localidad ? q.localidad + ", " : ""}${q.provincia}</footer></blockquote>`).join("")
+      ? sample.map((q) => `<blockquote class="testimonio">"${q.text}"<footer>(${q.localidad ? q.localidad + ", " : ""}${q.provincia})</footer></blockquote>`).join("")
       : `<p class="empty-note">Sin testimonios cargados todavía.</p>`;
 
     document.getElementById("printBtn").addEventListener("click", () => window.print());
