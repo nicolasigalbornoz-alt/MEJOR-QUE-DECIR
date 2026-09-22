@@ -24,7 +24,15 @@ window.MQD_MAP = (function () {
 
   function bucketFor(count, maxCount) {
     if (count <= 0) return -1;
-    const ratio = maxCount <= 1 ? 1 : (count - 1) / (maxCount - 1);
+    // Escala logarítmica, no lineal: la cantidad de respuestas está muy
+    // concentrada en un solo distrito (Buenos Aires suele superar por
+    // lejos al resto), así que una escala lineal contra el máximo deja a
+    // casi todas las demás provincias pegadas en el primer bucket sin
+    // importar si trajeron 5 o 60 personas. El logaritmo reparte la
+    // diferencia entre cantidades chicas y medianas en vez de reservarla
+    // toda para el distrito más grande.
+    if (maxCount <= 1) return RAMP_VARS.length - 1;
+    const ratio = Math.log(count) / Math.log(maxCount);
     return Math.min(RAMP_VARS.length - 1, Math.floor(ratio * RAMP_VARS.length));
   }
 
