@@ -51,6 +51,76 @@ window.MQD_MAP = (function () {
     `;
   }
 
+  // El sector antártico argentino (entre los meridianos 74°O y 25°O, al
+  // sur del paralelo 60°S — Ley 21.202) no se puede dibujar como una
+  // capa geográfica más en este mapa: llega hasta el polo, y en la
+  // proyección Mercator que usa Leaflet el polo no tiene coordenada (se
+  // va a infinito, la forma quedaría irreconocible). Por eso se
+  // resuelve como un recuadro fijo en la esquina, igual que hacen los
+  // mapas oficiales argentinos con el territorio nacional: un
+  // "sector"/cuña geométrica calculada con una proyección azimutal
+  // propia centrada en el polo (donde los meridianos son líneas rectas
+  // que salen del centro y los paralelos son arcos de circunferencia),
+  // no una aproximación a mano.
+  function antarticaWedgePath(radius) {
+    const lonWest = -74, lonEast = -25;
+    const lonMid = (lonWest + lonEast) / 2;
+    const toRad = (deg) => (deg * Math.PI) / 180;
+    const point = (lonDeg) => {
+      const angle = toRad(lonDeg - lonMid);
+      return [radius * Math.sin(angle), radius * Math.cos(angle)];
+    };
+    const [x1, y1] = point(lonWest);
+    const [x2, y2] = point(lonEast);
+    return `M 0 0 L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${radius} ${radius} 0 0 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`;
+  }
+
+  // Control de Leaflet (anclado a la pantalla, no al mapa) con la cuña
+  // antártica. Comparte color con la provincia de Tierra del Fuego, que
+  // es la que administra ese sector, y si se pasa onFeatureClick abre
+  // la misma ficha de detalle al tocarlo — con un objeto que imita lo
+  // mínimo de una capa de Leaflet (.setStyle) ya que no hay una capa
+  // geográfica real detrás.
+  function addAntarticaInset(map, fillColor, interactive, onFeatureClick) {
+    const RADIUS = 22;
+    const clickable = interactive && !!onFeatureClick;
+    const control = L.control({ position: "bottomright" });
+    control.onAdd = function () {
+      const div = L.DomUtil.create("div", "map-antartida" + (clickable ? " is-clickable" : ""));
+      div.innerHTML = `
+        <svg viewBox="-16 -3 32 30" width="30" height="28" aria-hidden="true">
+          <path d="${antarticaWedgePath(RADIUS)}" fill="${fillColor}" stroke="#fff" stroke-width="1.5"></path>
+        </svg>
+        <span>Antártida Arg.</span>
+      `;
+      L.DomEvent.disableClickPropagation(div);
+      L.DomEvent.disableScrollPropagation(div);
+      if (clickable) {
+        const pathEl = div.querySelector("path");
+        const fakeLayer = {
+          setStyle(style) {
+            if (style.color) pathEl.setAttribute("stroke", style.color);
+            if (style.weight) pathEl.setAttribute("stroke-width", style.weight);
+          },
+        };
+        const activate = () =>
+          onFeatureClick("tierradelfuego", fakeLayer, () => fakeLayer.setStyle({ color: "#fff", weight: 1.5 }));
+        div.setAttribute("role", "button");
+        div.setAttribute("tabindex", "0");
+        div.setAttribute("aria-label", "Antártida Argentina — parte de Tierra del Fuego");
+        L.DomEvent.on(div, "click", activate);
+        L.DomEvent.on(div, "keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(); }
+        });
+      } else {
+        div.setAttribute("aria-label", "Antártida Argentina");
+      }
+      return div;
+    };
+    control.addTo(map);
+    return control;
+  }
+
   // Dibuja el choropleth en cualquier contenedor.
   // opts:
   //  - interactive (default true): si es false, se apaga zoom/pan/hover/tap
@@ -178,6 +248,18 @@ window.MQD_MAP = (function () {
       };
     }
 
+    // Tierra del Fuego incluye a las Malvinas (ver argentina-provincias.geojson):
+    // son la misma provincia y el mismo color, pero quedan a cientos de km del
+    // territorio continental. Si se encuadra el mapa en "Tierra del Fuego" (al
+    // buscar una localidad ahí) usando los límites de TODA la geometría, el
+    // encuadre se ve forzado a alejarse muchísimo para abarcar también las
+    // islas — en vez de acercarse a Ushuaia/Río Grande, que es lo que
+    // realmente se busca. Por eso el encuadre por búsqueda usa nada más los
+    // primeros 2 polígonos (continente + Isla de los Estados; los agregados
+    // después de esos dos son las islas), guardados aparte del resto del
+    // layer.
+    const MAINLAND_POLYGON_COUNT = { tierradelfuego: 2 };
+
     let geoLayer = null;
     if (geo) {
       geoLayer = L.geoJSON(geo, {
@@ -185,6 +267,14 @@ window.MQD_MAP = (function () {
         style: (feature) => baseStyleFor(feature.properties.id),
         onEachFeature: (feature, layer) => {
           const pid = feature.properties.id;
+          const mainlandCount = MAINLAND_POLYGON_COUNT[pid];
+          if (mainlandCount && feature.geometry.type === "MultiPolygon") {
+            const bounds = L.latLngBounds([]);
+            feature.geometry.coordinates.slice(0, mainlandCount).forEach((poly) =>
+              poly.forEach((ring) => ring.forEach(([lon, lat]) => bounds.extend([lat, lon])))
+            );
+            layer._mqdSearchBounds = bounds;
+          }
           if (opts.onFeatureClick) {
             layer.on("click", () => opts.onFeatureClick(pid, layer, () => layer.setStyle(baseStyleFor(pid))));
           }
@@ -223,6 +313,17 @@ window.MQD_MAP = (function () {
       }
       if (interactive) marker.bindTooltip("CABA", { direction: "top", offset: [0, -6] });
       if (opts.onFeatureReady) opts.onFeatureReady("caba", marker);
+    }
+
+    // Ver el comentario junto a addAntarticaInset: el sector antártico no
+    // entra en la proyección del mapa como el resto de las provincias, así
+    // que se agrega aparte, coloreado igual que Tierra del Fuego (la
+    // provincia que lo administra).
+    const tdfStat = data.byProvince.tierradelfuego;
+    if (tdfStat) {
+      const tdfBucket = bucketFor(tdfStat.count, data.maxCount);
+      const tdfFill = tdfBucket >= 0 ? cssVar(RAMP_VARS[tdfBucket]) : emptyFill;
+      addAntarticaInset(map, tdfFill, interactive, opts.onFeatureClick);
     }
 
     return map;
@@ -551,7 +652,11 @@ window.MQD_MAP = (function () {
     // provincia directamente en el mapa NO pasa por acá (ver
     // onFeatureClick abajo): ahí solo se abre la ficha, sin mover el mapa.
     function goToProvince(layer) {
-      if (layer && layer.getBounds) goTo(layer.getBounds(), null, 24);
+      // _mqdSearchBounds (ver render() en MQD_MAP): en Tierra del Fuego evita
+      // que buscar una localidad continental fuerce un alejamiento enorme
+      // solo para que las Malvinas entren en el encuadre.
+      if (layer && layer._mqdSearchBounds) goTo(layer._mqdSearchBounds, null, 24);
+      else if (layer && layer.getBounds) goTo(layer.getBounds(), null, 24);
       else if (layer && layer.getLatLng) goTo(null, layer.getLatLng());
     }
 

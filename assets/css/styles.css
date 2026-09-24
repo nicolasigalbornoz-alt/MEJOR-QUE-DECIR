@@ -579,6 +579,31 @@ button { font-family: inherit; }
   z-index: 0;
 }
 
+/* Recuadro fijo del sector antártico — ver addAntarticaInset en map.js. */
+.map-antartida {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 7px 4px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  box-shadow: var(--shadow-s);
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  line-height: 1.15;
+  text-align: center;
+  user-select: none;
+}
+.map-antartida svg { display: block; }
+.map-antartida.is-clickable { cursor: pointer; }
+.map-antartida.is-clickable:hover, .map-antartida.is-clickable:focus-visible {
+  border-color: var(--sky);
+  outline: none;
+}
+
 /* ---------- Buscador de localidades (mapa.html) ---------- */
 .locality-search { position: relative; margin: 4px 0 0; }
 .locality-search > svg {
@@ -1171,7 +1196,7 @@ blockquote.testimonio footer {
      solos al pie de una hoja separados del texto que les sigue. */
   h1, h2, h3, h4 { break-after: avoid; page-break-after: avoid; }
   .stat-row, .stat, .bar-row, .diverging, .tag-row, .puzzle-grid,
-  .conclusion-item, blockquote.testimonio, .acta-resumen {
+  .conclusion-item, blockquote.testimonio, .acta-resumen, .map-canvas {
     break-inside: avoid;
     page-break-inside: avoid;
   }
