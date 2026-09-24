@@ -230,6 +230,10 @@
       comision: "Educación",
       texto: "El diagnóstico recorrió realidades muy distintas: alumnos que llegan a caballo a la escuela en San Juan, jardines que cierran por baja natalidad en Catamarca, y Corrientes con el salario docente más bajo del país tras 25 años del mismo gobierno provincial. La comisión coincidió en que la salida no pasa solo por más presupuesto, sino por un modelo de escuelas de oficio con arraigo provincial (tomando la experiencia sanjuanina) que frene la migración forzada de los jóvenes a las capitales en busca de futuro.",
     },
+    {
+      comision: "Trabajo y situación económica",
+      texto: "El desempleo y, sobre todo, el crecimiento del empleo informal (trabajos estacionales, empleo joven) atraviesan todos los distritos, agravados por el cierre de comercios y el aumento de tarifas. La comisión priorizó salidas concretas: escuelas de oficio con salida laboral rápida, pasantías municipales y empresariales compatibles con seguir estudiando, más tecnicaturas, y un cupo laboral para madres solteras que hoy sostienen sus economías a fuerza de autoexplotación.",
+    },
   ];
 
   function buildConclusionDoc(el) {
