@@ -149,6 +149,7 @@ join (values
   ('necesidades', 'becas', 'Becas y acceso a la educación superior', 7),
   ('necesidades', 'conectividad', 'Conectividad y acceso a tecnología', 8),
   ('necesidades', 'adicciones', 'Programas de prevención de adicciones', 9),
+  ('necesidades', 'infraestructura', 'Mejoras en infraestructura y servicios', 10),
   ('comision', 'trabajo-situacion-economica', 'Trabajo y situación económica', 0),
   ('comision', 'modelo-desarrollo-produccion-federalismo', 'Modelo de desarrollo, producción y federalismo', 1),
   ('comision', 'soberania-tierra-defensa', 'Soberanía, tierra y defensa', 2),

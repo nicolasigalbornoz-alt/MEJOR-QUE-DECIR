@@ -46,6 +46,7 @@ export const NEEDS = [
   { value: "becas", label: "Becas y acceso a la educación superior" },
   { value: "conectividad", label: "Conectividad y acceso a tecnología" },
   { value: "adicciones", label: "Programas de prevención de adicciones" },
+  { value: "infraestructura", label: "Mejoras en infraestructura y servicios" },
 ] as const;
 
 export const PARTICIPATION_OPTIONS = [

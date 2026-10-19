@@ -11,6 +11,7 @@ configuración inicial, usar **Supabase Dashboard → SQL Editor**:
 1. En un proyecto nuevo, ejecutar en orden:
    - `migrations/20261001000000_create_admin_access.sql`
    - `migrations/20261002000000_create_events_forms_and_reports.sql`
+   - `migrations/20261020000000_legacy_import_support.sql`
 2. Ejecutar `seed.sql` para crear el evento inicial, el formulario publicado,
    las preguntas y los catálogos de provincias, comisiones y talleres.
 3. No habilitar auto-registro. Crear el usuario administrador en
@@ -24,7 +25,7 @@ configuración inicial, usar **Supabase Dashboard → SQL Editor**:
    ```
 
 Si la primera migración ya está aplicada y tu acceso actual funciona, **no la
-vuelvas a ejecutar**: aplica solamente la segunda y luego `seed.sql`.
+vuelvas a ejecutar**: aplicá solamente las que falten y luego `seed.sql`.
 
 La cuenta de Auth y la fila de `admin_users` son controles separados. La
 autenticación confirma quién sos; la allowlist y RLS determinan si podés
@@ -48,7 +49,14 @@ específicos. Nunca agregues una clave privilegiada a `NEXT_PUBLIC_*`.
 
 ## Datos de respuesta y padrón
 
-- No se importaron respuestas reales desde Sheets.
+- Las respuestas y el padrón de la planilla anterior se importan una sola vez
+  con `node scripts/import-legacy-sheet.mjs` (Node 22.18+). El script lee las
+  pestañas "Respuestas encuesta" y "acred" y genera
+  `migration-input/import-legacy.sql`, que se pega en el SQL Editor después de
+  las migraciones y `seed.sql`. Es idempotente. `migration-input/` está
+  ignorado por git porque contiene datos personales.
+- Del padrón solo se importan nombre, provincia, localidad y acreditación. La
+  asignación final de comisión y panel queda en `submission_assignments`.
 - `public/data/respuestas-demo.csv` es sintético y se usa como fallback visual
   cuando la función de reportes no tiene respuestas reales. No se inserta en
   `form_submissions` ni se mezcla con datos reales.
