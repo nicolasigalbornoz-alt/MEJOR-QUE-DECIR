@@ -24,8 +24,13 @@ No se añade una biblioteca visual ni infraestructura distribuida.
 - Mapa federal con provincias, CABA, Malvinas y Antártida, búsqueda y datos por distrito.
 - Síntesis con agregados, comisiones, conclusiones, actas y salida para imprimir.
 - Insumos enlazados a Drive y Centros de Estudios.
-- Panel autenticado para una única cuenta administradora: gestión de eventos,
-  formularios, versiones, cupos y actas.
+- Panel autenticado con roles (admin, editor y lector) e invitaciones por mail:
+  - **Base de datos:** compañeros con localidad y responsabilidades, y
+    contactos de dirigentes e instituciones con el compañero que los conoce.
+  - **Recursos:** insumos (actividades con procedimiento, tags, adjuntos y
+    quiénes las hicieron) y formación (libros y PDFs). Son solo internos.
+  - **Encuentro 2026:** eventos, formularios, versiones, respuestas, actas y cupos.
+  - **Configuración:** etiquetas editables por categoría y usuarios.
 - Los resúmenes de actas son públicos. Cada documento Word se guarda privado;
   el administrador puede habilitar o quitar su publicación individualmente.
 
@@ -67,8 +72,11 @@ src/
     events/               Eventos y materiales de Drive
     forms/                Formularios y renderer
     reports/              Mapa, agregados y síntesis
+    militants/ contacts/  Bases internas del panel
+    activities/ library/  Insumos y formación
+    tags/                 Categorías de etiquetas
   lib/
-    auth/                 Comprobación server-side de administrador
+    auth/                 Sesión y rol del equipo (requireStaff)
     data/                 Consultas Supabase y datos de demostración
     supabase/             Clientes server y público
     validation/           Validación de envíos

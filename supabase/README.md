@@ -1,7 +1,10 @@
 # Supabase: configuración y datos
 
-La aplicación usa una sola cuenta administradora. El registro público está
-deshabilitado; el padrón y las respuestas no se publican como tablas.
+El panel tiene tres roles: **admin** (todo, incluido borrar y gestionar
+usuarios), **editor** (carga y edita) y **lector** (solo consulta). El
+registro público está deshabilitado: las cuentas se crean por invitación desde
+`/admin/usuarios`. El padrón, las respuestas y las bases internas no se
+publican como tablas.
 
 ## Aplicar esquema y catálogo inicial
 
@@ -12,24 +15,51 @@ configuración inicial, usar **Supabase Dashboard → SQL Editor**:
    - `migrations/20261001000000_create_admin_access.sql`
    - `migrations/20261002000000_create_events_forms_and_reports.sql`
    - `migrations/20261020000000_legacy_import_support.sql`
+   - `migrations/20261021000000_staff_roles.sql`
+   - `migrations/20261022000000_tags_and_militants.sql`
+   - `migrations/20261023000000_contacts.sql`
+   - `migrations/20261024000000_activities.sql`
+   - `migrations/20261025000000_library.sql`
 2. Ejecutar `seed.sql` para crear el evento inicial, el formulario publicado,
    las preguntas y los catálogos de provincias, comisiones y talleres.
-3. No habilitar auto-registro. Crear el usuario administrador en
-   **Authentication → Users** y darle acceso en `public.admin_users` si aún no
-   está asignado:
+3. No habilitar auto-registro. Crear la primera cuenta administradora en
+   **Authentication → Users** y darle el rol (las siguientes se invitan desde
+   el panel):
 
    ```sql
-   insert into public.admin_users (user_id)
-   values ('UUID_DEL_USUARIO')
-   on conflict (user_id) do nothing;
+   insert into public.staff_members (user_id, role, email)
+   values ('UUID_DEL_USUARIO', 'admin', 'correo@ejemplo.com')
+   on conflict (user_id) do update set role = 'admin';
    ```
+
+   En un proyecto que ya tenía `admin_users`, la migración de roles copia esas
+   cuentas como admin y después elimina la tabla.
 
 Si la primera migración ya está aplicada y tu acceso actual funciona, **no la
 vuelvas a ejecutar**: aplicá solamente las que falten y luego `seed.sql`.
 
-La cuenta de Auth y la fila de `admin_users` son controles separados. La
-autenticación confirma quién sos; la allowlist y RLS determinan si podés
-administrar.
+La cuenta de Auth y la fila de `staff_members` son controles separados. La
+autenticación confirma quién sos; el rol y RLS determinan qué podés hacer.
+Siempre tiene que quedar al menos un admin (lo impide un trigger).
+
+## Invitaciones
+
+1. Configurar `SUPABASE_SERVICE_ROLE_KEY` en `.env.local` y en Vercel (solo
+   servidor, nunca `NEXT_PUBLIC_*`). Se usa únicamente para invitar y eliminar
+   cuentas, después de comprobar que quien lo pide es admin.
+2. En **Authentication → Email Templates → Invite user**, el enlace tiene que
+   apuntar a la ruta de confirmación del panel:
+
+   ```html
+   <a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=invite">Aceptar invitación</a>
+   ```
+
+3. En **Authentication → URL Configuration**, agregar como redirect URLs
+   `http://localhost:3000/admin/auth/confirm` y la misma ruta del dominio de
+   producción.
+
+La persona invitada abre el mail, elige su contraseña en `/admin/clave` y
+entra con el rol asignado.
 
 ## Variables locales y Vercel
 
@@ -43,9 +73,19 @@ Production y Preview. Configurá también en Supabase Auth el Site URL y los
 redirect URLs correspondientes a `http://localhost:3000` y al dominio de
 producción.
 
-La aplicación no requiere `service_role`: las páginas usan sesiones del
-administrador, consultas públicas acotadas y funciones SQL con permisos
-específicos. Nunca agregues una clave privilegiada a `NEXT_PUBLIC_*`.
+Salvo las invitaciones, la aplicación no usa `service_role`: las páginas
+usan la sesión de cada usuario, consultas públicas acotadas y funciones SQL con
+permisos específicos. Nunca agregues una clave privilegiada a `NEXT_PUBLIC_*`.
+
+## Archivos del panel
+
+- `activity-files` (insumos: PDF, Word e imágenes hasta 20 MB) y `library`
+  (formación: PDF y EPUB hasta 50 MB) son buckets privados. Leen todos los
+  roles; suben y quitan archivos editores y admins.
+- Las descargas pasan por `/admin/descargas/...`, que comprueba la sesión y
+  redirige a una URL firmada de 5 minutos.
+- Un archivo subido en un formulario que no se guarda queda sin referencia en
+  el bucket; se puede limpiar desde el dashboard de Storage.
 
 ## Datos de respuesta y padrón
 
@@ -57,6 +97,10 @@ específicos. Nunca agregues una clave privilegiada a `NEXT_PUBLIC_*`.
   ignorado por git porque contiene datos personales.
 - Del padrón solo se importan nombre, provincia, localidad y acreditación. La
   asignación final de comisión y panel queda en `submission_assignments`.
+- El mismo script genera `migration-input/import-militants.sql`, que carga la
+  base de compañeros del panel (nombre, provincia, localidad, teléfono y mail)
+  con la etiqueta "Militante". Se ejecuta después de la migración de
+  compañeros y no duplica personas si se repite.
 - `public/data/respuestas-demo.csv` es sintético y se usa como fallback visual
   cuando la función de reportes no tiene respuestas reales. No se inserta en
   `form_submissions` ni se mezcla con datos reales.

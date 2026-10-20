@@ -30,8 +30,9 @@ infraestructura distribuida sin una necesidad confirmada.
 
 1. **Aplicación modular, no microservicios.** Mantener un único proyecto
    Next.js organizado por áreas funcionales: eventos, formularios, reportes
-   y administración. El MVP tiene una sola cuenta administradora; no agregar
-   roles multiusuario sin un requisito confirmado.
+   y administración. El panel tiene tres roles confirmados (admin, editor y
+   lector, en `staff_members`); no agregar roles ni permisos por sección sin
+   un requisito confirmado.
 2. **Separar interfaz y acceso a datos.** Componentes de UI no contienen
    consultas SQL ni decisiones de permisos. Mantener el acceso a datos en
    módulos exclusivamente de servidor.
@@ -104,7 +105,13 @@ src/components/             Componentes reutilizables
 src/features/events/        Interfaz y operaciones de eventos
 src/features/forms/         Formularios, versiones y respuestas
 src/features/reports/       Mapa, datos agregados y síntesis
-src/app/admin/              Panel, permisos y archivos
+src/features/militants/     Base de compañeros y responsabilidades
+src/features/contacts/      Contactos de dirigentes e instituciones
+src/features/activities/    Insumos: actividades con adjuntos
+src/features/library/       Formación: libros y PDFs
+src/features/tags/          Categorías de etiquetas editables
+src/app/admin/(panel)/      Panel con nav, permisos por rol y archivos
+src/components/admin/       Selectores, adjuntos y listados del panel
 src/lib/supabase/           Clientes Supabase server/client y sesión
 src/lib/data/               Acceso a datos exclusivo de servidor
 src/lib/validation/         Esquemas de validación
