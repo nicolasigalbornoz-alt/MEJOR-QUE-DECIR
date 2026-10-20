@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { COMMISSIONS, WORKSHOPS } from "@/features/forms/catalogs";
 import { updateCapacity } from "@/app/admin/(panel)/cupos/actions";
 import { requireStaff } from "@/lib/auth/require-staff";
+import { hasRole } from "@/lib/auth/staff";
 
 export const metadata: Metadata = { title: "Administrar cupos, MEJOR QUE DECIR", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -11,7 +12,8 @@ export default async function AdminCapacityPage({
 }: {
   searchParams: Promise<{ error?: string; saved?: string }>;
 }) {
-  const { supabase } = await requireStaff();
+  const { supabase, access } = await requireStaff();
+  const canEdit = hasRole(access.role, "editor");
   const [{ data: form }, { data: dbCommissions }, { data: dbWorkshops }, query] = await Promise.all([
     supabase.from("forms").select("id,form_versions(id,status)").eq("slug", "mejor-que-decir").maybeSingle(),
     supabase.from("commissions").select("id,name,capacity").eq("active", true).order("position"),
@@ -58,12 +60,12 @@ export default async function AdminCapacityPage({
                   <article className="card" key={option.id}>
                     <h3 className="mt-0">{option.name}</h3>
                     <p>{option.count} confirmados · cupo {option.capacity} · {Math.max(option.capacity - option.count, 0)} disponibles</p>
-                    <form action={updateCapacity} style={{ display: "flex", alignItems: "end", gap: 8 }}>
+                    {canEdit && <form action={updateCapacity} style={{ display: "flex", alignItems: "end", gap: 8 }}>
                       <input type="hidden" name="type" value={list.type} />
                       <input type="hidden" name="id" value={option.id} />
                       <div className="field"><label className="field-label" htmlFor={`capacity-${option.id}`}>Nuevo cupo</label><input className="input" id={`capacity-${option.id}`} name="capacity" type="number" min={0} max={100000} defaultValue={option.capacity} required /></div>
                       <button className="btn btn-ghost" type="submit">Actualizar</button>
-                    </form>
+                    </form>}
                   </article>
               ))}
             </section>

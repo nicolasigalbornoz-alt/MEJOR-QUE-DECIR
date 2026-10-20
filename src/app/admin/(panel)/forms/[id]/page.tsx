@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { addQuestion, createFormVersion, publishFormVersion, removeDraftQuestion, updateDraftQuestion, updateForm } from "@/app/admin/(panel)/forms/actions";
 import { requireStaff } from "@/lib/auth/require-staff";
+import { hasRole } from "@/lib/auth/staff";
 
 export const metadata: Metadata = { title: "Editor de formulario, MEJOR QUE DECIR", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -15,7 +16,8 @@ export default async function AdminFormEditorPage({
   searchParams: Promise<{ error?: string; saved?: string; published?: string; version?: string }>;
 }) {
   const { id } = await params;
-  const { supabase } = await requireStaff();
+  const { supabase, access } = await requireStaff();
+  const canEdit = hasRole(access.role, "editor");
   const [{ data: form }, { data: versions }, { data: events }, query] = await Promise.all([
     supabase.from("forms").select("id,slug,title,intro,status,event_id").eq("id", id).maybeSingle(),
     supabase.from("form_versions").select("id,version_number,status,created_at,published_at").eq("form_id", id).order("version_number", { ascending: false }),
@@ -47,7 +49,7 @@ export default async function AdminFormEditorPage({
           {query.saved && <p className="form-msg is-visible success" role="status">Cambios guardados en el borrador.</p>}
           {query.published && <p className="form-msg is-visible success" role="status">Versión publicada.</p>}
 
-          <div className="card">
+          {canEdit && <div className="card">
             <h2 className="mt-0" style={{ fontSize: 19 }}>Información del formulario</h2>
             <form action={updateForm}>
               <input type="hidden" name="formId" value={form.id} />
@@ -57,12 +59,12 @@ export default async function AdminFormEditorPage({
               <div className="field"><label className="field-label" htmlFor="formEvent">Evento</label><div className="select-wrap"><select className="select" id="formEvent" name="eventId" defaultValue={form.event_id ?? ""}><option value="">Sin evento</option>{events?.map((event) => <option key={event.id} value={event.id}>{event.title}</option>)}</select></div></div>
               <button className="btn btn-ghost" type="submit">Guardar información</button>
             </form>
-          </div>
+          </div>}
 
           <div className="card">
             <h2 className="mt-0" style={{ fontSize: 19 }}>Versiones</h2>
             <ul>{versions?.map((version) => <li key={version.id}>Versión {version.version_number} — {version.status}{version.published_at ? ` · ${new Date(version.published_at).toLocaleDateString("es-AR")}` : ""} {version.id === chosenVersion.id ? "(seleccionada)" : <Link href={`/admin/forms/${form.id}?version=${version.id}`}>Ver</Link>}</li>)}</ul>
-            <form action={createFormVersion}><input type="hidden" name="formId" value={form.id} /><button className="btn btn-secondary" type="submit">Crear nueva versión borrador</button></form>
+            {canEdit && <form action={createFormVersion}><input type="hidden" name="formId" value={form.id} /><button className="btn btn-secondary" type="submit">Crear nueva versión borrador</button></form>}
           </div>
 
           <div className="card">
@@ -73,7 +75,7 @@ export default async function AdminFormEditorPage({
                 <b>{question.position + 1}. {question.label}</b>
                 <p className="muted small">{question.field_key} · {question.question_type}{question.required ? " · obligatorio" : ""}</p>
                 {question.form_question_options?.length ? <ul>{question.form_question_options.sort((a, b) => a.position - b.position).map((option) => <li key={option.value}>{option.label}</li>)}</ul> : null}
-                {chosenVersion.status === "draft" && <>
+                {chosenVersion.status === "draft" && canEdit && <>
                   <details>
                     <summary>Editar pregunta</summary>
                     <form action={updateDraftQuestion}>
@@ -91,7 +93,7 @@ export default async function AdminFormEditorPage({
             ))}
           </div>
 
-          {chosenVersion.status === "draft" && (
+          {chosenVersion.status === "draft" && canEdit && (
             <>
               <div className="card">
                 <h2 className="mt-0" style={{ fontSize: 19 }}>Agregar pregunta</h2>

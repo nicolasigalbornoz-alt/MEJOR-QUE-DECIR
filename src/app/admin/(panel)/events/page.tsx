@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { changeEventStatus, createEvent, updateEvent } from "@/app/admin/(panel)/events/actions";
 import { requireStaff } from "@/lib/auth/require-staff";
+import { hasRole } from "@/lib/auth/staff";
 import { formatArgentinaDate, toArgentinaDateTimeInput } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Administrar eventos, MEJOR QUE DECIR", robots: { index: false, follow: false } };
@@ -19,7 +20,8 @@ export default async function AdminEventsPage({
 }: {
   searchParams: Promise<{ error?: string; saved?: string }>;
 }) {
-  const { supabase } = await requireStaff();
+  const { supabase, access } = await requireStaff();
+  const canEdit = hasRole(access.role, "editor");
   const [{ data: events, error }, query] = await Promise.all([
     supabase.from("events").select("id,slug,title,description,starts_at,ends_at,status").order("created_at", { ascending: false }),
     searchParams,
@@ -38,7 +40,7 @@ export default async function AdminEventsPage({
           {query.saved && <p className="form-msg is-visible success" role="status">Cambios guardados.</p>}
           {error && <p className="form-msg is-visible error" role="alert">No se pudo leer la lista. Revisá la migración `create_events_forms_and_reports`.</p>}
 
-          <div className="card">
+          {canEdit && <div className="card">
             <h2 className="mt-0" style={{ fontSize: 19 }}>Crear evento</h2>
             <form action={createEvent}>
               <div className="field"><label className="field-label" htmlFor="title">Título</label><input className="input" id="title" name="title" maxLength={180} required /></div>
@@ -48,7 +50,7 @@ export default async function AdminEventsPage({
               <div className="field"><label className="field-label" htmlFor="endsAt">Fin (opcional)</label><input className="input" id="endsAt" name="endsAt" type="datetime-local" /></div>
               <button className="btn btn-primary" type="submit">Crear borrador</button>
             </form>
-          </div>
+          </div>}
 
           <h2>Eventos existentes</h2>
           {events?.length ? events.map((event) => (
@@ -61,7 +63,7 @@ export default async function AdminEventsPage({
                 </div>
                 {event.status === "published" && <Link className="btn btn-secondary" href={`/eventos/${event.slug}`}>Ver público</Link>}
               </div>
-              <details>
+              {canEdit && <><details>
                 <summary>Editar información</summary>
                 <form action={updateEvent}>
                   <input type="hidden" name="eventId" value={event.id} />
@@ -82,7 +84,7 @@ export default async function AdminEventsPage({
                   </select></div>
                 </div>
                 <button className="btn btn-ghost" type="submit">Guardar estado</button>
-              </form>
+              </form></>}
             </article>
           )) : <p className="empty-note">Todavía no hay eventos. Al aplicar las migraciones aparecerá también el encuentro actual.</p>}
         </section>

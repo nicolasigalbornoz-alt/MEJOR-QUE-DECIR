@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { changeActDocumentVisibility, deleteCommissionAct } from "@/app/admin/(panel)/actas/actions";
 import { ActUploadForm } from "@/features/events/ActUploadForm";
 import { requireStaff } from "@/lib/auth/require-staff";
+import { hasRole } from "@/lib/auth/staff";
 
 export const metadata: Metadata = { title: "Administrar actas, MEJOR QUE DECIR", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -20,7 +21,8 @@ export default async function AdminActsPage({
 }: {
   searchParams: Promise<{ error?: string; saved?: string }>;
 }) {
-  const { supabase } = await requireStaff();
+  const { supabase, access } = await requireStaff();
+  const canEdit = hasRole(access.role, "editor");
   const [{ data: commissions }, { data: acts, error }, query] = await Promise.all([
     supabase.from("commissions").select("id,name").eq("active", true).order("position"),
     supabase.from("commission_acts").select("id,commission_id,summary,storage_path,original_filename,file_size_bytes,document_public,uploaded_at,commission:commissions(name)").order("uploaded_at", { ascending: false }),
@@ -39,10 +41,10 @@ export default async function AdminActsPage({
           {query.saved && <p className="form-msg is-visible success" role="status">Acta guardada.</p>}
           {error && <p className="empty-note">No se pudieron consultar las actas. Verificá la migración de Supabase.</p>}
 
-          <div className="card">
+          {canEdit && <div className="card">
             <h2 className="mt-0" style={{ fontSize: 19 }}>Subir o reemplazar acta</h2>
             <ActUploadForm commissions={commissions ?? []} />
-          </div>
+          </div>}
 
           <h2>Actas cargadas</h2>
           {acts?.map((act) => (
@@ -52,15 +54,15 @@ export default async function AdminActsPage({
               <p className="muted small">{act.original_filename} · {(act.file_size_bytes / (1024 * 1024)).toFixed(2)} MB · {act.document_public ? "Documento público" : "Documento privado"}</p>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <a className="btn btn-ghost" href={`/api/actas/${act.id}/document`}>Abrir Word</a>
-                <form action={changeActDocumentVisibility}>
+                {canEdit && <form action={changeActDocumentVisibility}>
                   <input type="hidden" name="actId" value={act.id} />
                   <input type="hidden" name="documentPublic" value={act.document_public ? "false" : "true"} />
                   <button className="btn btn-ghost" type="submit">{act.document_public ? "Volver privado" : "Hacer público"}</button>
-                </form>
-                <form action={deleteCommissionAct}>
+                </form>}
+                {access.role === "admin" && <form action={deleteCommissionAct}>
                   <input type="hidden" name="actId" value={act.id} />
                   <button className="btn btn-ghost" type="submit">Eliminar acta</button>
-                </form>
+                </form>}
               </div>
             </article>
           ))}
