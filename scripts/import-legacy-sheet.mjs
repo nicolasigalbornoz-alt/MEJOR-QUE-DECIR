@@ -2,9 +2,10 @@
 /**
  * Importación única de la planilla anterior (Google Sheets / Apps Script).
  *
- * Lee las pestañas "Respuestas encuesta" y "acred", y genera un SQL para
- * pegar en Supabase → SQL Editor. No se conecta a Supabase ni escribe en la
- * planilla.
+ * Lee las pestañas "Respuestas encuesta" y "acred", y genera dos SQL para
+ * pegar en Supabase → SQL Editor: import-legacy.sql (respuestas y padrón del
+ * encuentro) e import-militants.sql (base de compañeros del panel). No se
+ * conecta a Supabase ni escribe en la planilla.
  *
  *   node scripts/import-legacy-sheet.mjs            usa la copia local si existe
  *   node scripts/import-legacy-sheet.mjs --refresh  vuelve a descargar la planilla
@@ -12,8 +13,9 @@
  * La copia cruda y el SQL quedan en migration-input/ (ignorado por git):
  * contienen datos personales y no se commitean.
  *
- * Del padrón solo se toman nombre, provincia, localidad y acreditación. No se
- * importan correo, teléfono, fecha de nacimiento ni redes sociales.
+ * Del padrón del encuentro solo se toman nombre, provincia, localidad y
+ * acreditación. La base de compañeros suma teléfono y mail. Nunca se importan
+ * fecha de nacimiento, redes sociales ni el resto de las respuestas.
  *
  * Requiere Node 22.18 o superior (importa catálogos TypeScript de src/).
  */
@@ -347,6 +349,78 @@ select
 `;
 }
 
+// ---------- Compañeros (base interna del panel) ----------
+
+function phoneText(value) {
+  if (typeof value === "number" && Number.isFinite(value)) return String(Math.round(value));
+  return text(value, 60);
+}
+
+function emailText(...values) {
+  for (const value of values) {
+    const email = text(value, 254).toLowerCase();
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return email;
+  }
+  return "";
+}
+
+function buildMilitants(table, directory) {
+  const directoryProvince = new Map(directory.map((d) => [normalize(d.nombre), d.provincia]));
+  const byName = new Map();
+  table.rows.forEach((row) => {
+    const nombre = text(row[2], 200);
+    if (!nombre) return;
+    const key = normalize(nombre);
+    const candidate = {
+      nombre,
+      provincia: directoryProvince.get(key) ?? null,
+      localidad: text(row[5], 200),
+      telefono: phoneText(row[3]),
+      email: emailText(row[1], row[13]),
+    };
+    const previous = byName.get(key);
+    // Ante nombres repetidos, se queda con la fila que tenga más datos de contacto.
+    const score = (item) => (item.telefono ? 1 : 0) + (item.email ? 1 : 0);
+    if (!previous || score(candidate) > score(previous)) byName.set(key, candidate);
+  });
+  return [...byName.values()];
+}
+
+function buildMilitantsSql(militants) {
+  const values = militants.map((m) => `  (${literal(m.nombre)}, ${literal(m.provincia)}, ${literal(m.localidad)}, ${literal(m.telefono)}, ${literal(m.email)})`);
+  return `-- Importación de compañeros desde el padrón del Encuentro 2026: ${militants.length} personas.
+-- Generado por scripts/import-legacy-sheet.mjs el ${new Date().toISOString()}.
+-- CONTIENE DATOS PERSONALES: no commitear ni compartir.
+-- Requiere la migración 20261022000000_tags_and_militants.sql.
+-- Se puede volver a ejecutar: no duplica compañeros (compara el nombre normalizado).
+
+with padron (full_name, province_id, locality, phone, email) as (
+  values
+${values.join(",\n")}
+),
+inserted as (
+  insert into public.militants (full_name, province_id, locality, phone, email, source)
+  select p.full_name::text, p.province_id::text, p.locality::text, p.phone::text, p.email::text, 'padron-2026'
+  from padron p
+  where not exists (
+    select 1 from public.militants m
+    where m.normalized_name = private.normalize_person_name(p.full_name::text)
+  )
+  returning id
+)
+insert into public.militant_roles (militant_id, tag_id)
+select i.id, t.id
+from inserted i
+cross join public.tags t
+where t.category = 'responsabilidad' and t.name = 'Militante'
+on conflict do nothing;
+
+select
+  (select count(*) from public.militants where source = 'padron-2026') as companeros_padron,
+  (select count(*) from public.militant_roles r join public.tags t on t.id = r.tag_id where t.name = 'Militante') as con_etiqueta_militante;
+`;
+}
+
 // ---------- Main ----------
 
 mkdirSync(OUTPUT_DIR, { recursive: true });
@@ -354,6 +428,9 @@ const responses = buildResponses(await loadSheet(RESPONSES_SHEET));
 const directory = buildDirectory(await loadSheet(DIRECTORY_SHEET), responses);
 const sqlPath = resolve(OUTPUT_DIR, "import-legacy.sql");
 writeFileSync(sqlPath, buildSql(responses, directory));
+const militants = buildMilitants(await loadSheet(DIRECTORY_SHEET), directory);
+const militantsSqlPath = resolve(OUTPUT_DIR, "import-militants.sql");
+writeFileSync(militantsSqlPath, buildMilitantsSql(militants));
 
 const distinctNames = (items) => new Set(items.map((item) => normalize(item.nombre))).size;
 console.log(`Respuestas: ${responses.length} (${distinctNames(responses)} nombres distintos)`);
@@ -362,4 +439,6 @@ console.log(`Padrón: ${directory.length} filas (${distinctNames(directory)} nom
 console.log(`Avisos: ${issues.length}`);
 for (const issue of issues.slice(0, 80)) console.log(`  - ${issue}`);
 if (issues.length > 80) console.log(`  ... y ${issues.length - 80} más`);
+console.log(`Compañeros: ${militants.length} (${militants.filter((m) => m.telefono).length} con teléfono, ${militants.filter((m) => m.email).length} con mail)`);
 console.log(`\nSQL generado en ${sqlPath}`);
+console.log(`SQL de compañeros generado en ${militantsSqlPath}`);
