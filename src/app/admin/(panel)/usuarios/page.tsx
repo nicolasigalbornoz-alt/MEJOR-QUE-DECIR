@@ -7,6 +7,8 @@ const errorMessages: Record<string, string> = {
   service: "Falta configurar SUPABASE_SERVICE_ROLE_KEY en el servidor para enviar invitaciones.",
   exists: "Ya existe una cuenta con ese correo.",
   invite: "No pudimos enviar la invitación.",
+  "rate-limit": "Supabase alcanzó el límite de mails por hora. Esperá un rato o configurá un SMTP propio en Supabase.",
+  email: "Supabase no acepta ese correo como válido.",
   save: "No pudimos guardar el cambio.",
   "last-admin": "Tiene que quedar al menos una cuenta administradora.",
   self: "No podés quitarte el acceso a vos mismo.",

@@ -40,7 +40,15 @@ export async function inviteStaff(formData: FormData) {
     redirectTo: `${await siteOrigin()}/admin/auth/confirm`,
     data: { display_name: parsed.data.displayName },
   });
-  if (error || !data.user) redirect(`/admin/usuarios?error=${error?.code === "email_exists" ? "exists" : "invite"}`);
+  if (error || !data.user) {
+    // Solo el código y el estado: el mail invitado no se escribe en los logs.
+    console.error("No se pudo invitar al panel", { code: error?.code, status: error?.status, message: error?.message });
+    const reason = error?.code === "email_exists" || error?.code === "user_already_exists" ? "exists"
+      : error?.code === "over_email_send_rate_limit" || error?.status === 429 ? "rate-limit"
+      : error?.code === "email_address_invalid" ? "email"
+      : "invite";
+    redirect(`/admin/usuarios?error=${reason}`);
+  }
 
   const { error: memberError } = await service.from("staff_members").upsert({
     user_id: data.user.id,
