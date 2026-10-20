@@ -1,21 +1,16 @@
-import { changeStaffRole, inviteStaff, removeStaff } from "@/app/admin/(panel)/usuarios/actions";
+import { changeStaffRole, removeStaff } from "@/app/admin/(panel)/usuarios/actions";
+import { InviteForm } from "@/app/admin/(panel)/usuarios/InviteForm";
 import { requireStaff } from "@/lib/auth/require-staff";
 import { STAFF_ROLE_LABELS, type StaffRole } from "@/lib/auth/staff";
 
 const errorMessages: Record<string, string> = {
-  invalid: "Revisá el correo y el rol.",
-  service: "Falta configurar SUPABASE_SERVICE_ROLE_KEY en el servidor para enviar invitaciones.",
-  exists: "Ya existe una cuenta con ese correo.",
-  invite: "No pudimos enviar la invitación.",
-  "rate-limit": "Supabase alcanzó el límite de mails por hora. Esperá un rato o configurá un SMTP propio en Supabase.",
-  email: "Supabase no acepta ese correo como válido.",
+  invalid: "Datos inválidos.",
   save: "No pudimos guardar el cambio.",
   "last-admin": "Tiene que quedar al menos una cuenta administradora.",
   self: "No podés quitarte el acceso a vos mismo.",
 };
 
 const savedMessages: Record<string, string> = {
-  invited: "Invitación enviada.",
   role: "Rol actualizado.",
   removed: "Acceso quitado.",
 };
@@ -47,24 +42,11 @@ export default async function StaffPage({
 
       <div className="card">
         <h2 className="mt-0" style={{ fontSize: 18 }}>Invitar</h2>
-        <p className="muted">La persona recibe un mail para elegir su contraseña.</p>
-        <form action={inviteStaff} className="form-grid">
-          <div className="field">
-            <label className="field-label" htmlFor="invite-email">Correo</label>
-            <input className="input" id="invite-email" name="email" type="email" maxLength={254} required />
-          </div>
-          <div className="field">
-            <label className="field-label" htmlFor="invite-name">Nombre</label>
-            <input className="input" id="invite-name" name="displayName" maxLength={120} />
-          </div>
-          <div className="field span-2">
-            <label className="field-label" htmlFor="invite-role">Rol</label>
-            <select className="select" id="invite-role" name="role" defaultValue="editor">
-              {ROLES.map(([value, label]) => <option key={value} value={value}>{label}: {ROLE_HELP[value]}</option>)}
-            </select>
-          </div>
-          <div className="span-2"><button className="btn btn-primary" type="submit">Enviar invitación</button></div>
-        </form>
+        <p className="muted">
+          <b>Generar enlace</b> crea la cuenta y te da un enlace para pasarle a la persona (no manda mail).
+          <b> Enviar por mail</b> usa el correo de Supabase, que tiene un límite bajo de envíos por hora.
+        </p>
+        <InviteForm roles={ROLES.map(([value, label]) => ({ value, label: `${label}: ${ROLE_HELP[value]}` }))} />
       </div>
 
       <h2 style={{ fontSize: 18, marginTop: 28 }}>Equipo</h2>

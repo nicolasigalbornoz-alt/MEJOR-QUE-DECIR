@@ -61,6 +61,13 @@ Siempre tiene que quedar al menos un admin (lo impide un trigger).
 La persona invitada abre el mail, elige su contraseña en `/admin/clave` y
 entra con el rol asignado.
 
+El correo que trae Supabase por defecto permite muy pocos envíos por hora. Por
+eso `/admin/usuarios` ofrece también **Generar enlace**: crea la cuenta con su
+rol y muestra un enlace de un solo uso para pasarle a la persona por otro
+medio, sin mandar mail ni depender de la plantilla. Si la cuenta ya existía,
+el enlace es de recuperación y sirve para elegir una contraseña nueva. Vence
+según "Email OTP Expiration" en Supabase Auth.
+
 ## Variables locales y Vercel
 
 Completar `.env.local` a partir de `.env.example` con:
