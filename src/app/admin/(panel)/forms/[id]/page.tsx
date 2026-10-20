@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
-import { addQuestion, createFormVersion, publishFormVersion, removeDraftQuestion, updateDraftQuestion, updateForm } from "@/app/admin/forms/actions";
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { addQuestion, createFormVersion, publishFormVersion, removeDraftQuestion, updateDraftQuestion, updateForm } from "@/app/admin/(panel)/forms/actions";
+import { requireStaff } from "@/lib/auth/require-staff";
 
 export const metadata: Metadata = { title: "Editor de formulario, MEJOR QUE DECIR", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -16,7 +15,7 @@ export default async function AdminFormEditorPage({
   searchParams: Promise<{ error?: string; saved?: string; published?: string; version?: string }>;
 }) {
   const { id } = await params;
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requireStaff();
   const [{ data: form }, { data: versions }, { data: events }, query] = await Promise.all([
     supabase.from("forms").select("id,slug,title,intro,status,event_id").eq("id", id).maybeSingle(),
     supabase.from("form_versions").select("id,version_number,status,created_at,published_at").eq("form_id", id).order("version_number", { ascending: false }),
@@ -37,8 +36,6 @@ export default async function AdminFormEditorPage({
 
   return (
     <>
-      <SiteHeader />
-      <main>
         <section className="hero wrap" style={{ paddingTop: 28 }}>
           <span className="eyebrow">Administración · Formularios</span>
           <h1 style={{ fontSize: "clamp(24px, 7vw, 30px)" }}>{form.title}</h1>
@@ -121,8 +118,6 @@ export default async function AdminFormEditorPage({
             </>
           )}
         </section>
-      </main>
-      <SiteFooter />
     </>
   );
 }

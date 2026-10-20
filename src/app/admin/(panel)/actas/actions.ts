@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { requireStaff } from "@/lib/auth/require-staff";
 
 const MAX_FILE_BYTES = 8 * 1024 * 1024;
 
@@ -30,7 +30,7 @@ export async function saveCommissionAct(input: unknown) {
     return { ok: false as const, error: "El archivo no coincide con la comisión seleccionada." };
   }
 
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requireStaff("editor");
   const { data: commission } = await supabase.from("commissions").select("id").eq("id", parsed.data.commissionId).eq("active", true).maybeSingle();
   if (!commission) return { ok: false as const, error: "Elegí una comisión activa." };
 
@@ -66,7 +66,7 @@ export async function changeActDocumentVisibility(formData: FormData) {
   const id = z.string().uuid().safeParse(formData.get("actId"));
   const isPublic = z.enum(["true", "false"]).safeParse(formData.get("documentPublic"));
   if (!id.success || !isPublic.success) redirect("/admin/actas?error=validation");
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requireStaff("editor");
   const { error } = await supabase.from("commission_acts").update({
     document_public: isPublic.data === "true",
     updated_at: new Date().toISOString(),
@@ -80,7 +80,7 @@ export async function changeActDocumentVisibility(formData: FormData) {
 export async function deleteCommissionAct(formData: FormData) {
   const id = z.string().uuid().safeParse(formData.get("actId"));
   if (!id.success) redirect("/admin/actas?error=validation");
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requireStaff("admin");
   const { data: act } = await supabase.from("commission_acts").select("storage_path").eq("id", id.data).maybeSingle();
   if (!act) redirect("/admin/actas?error=not-found");
   const { error } = await supabase.from("commission_acts").delete().eq("id", id.data);

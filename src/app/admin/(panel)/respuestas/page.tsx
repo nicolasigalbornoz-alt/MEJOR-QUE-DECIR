@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { requireStaff } from "@/lib/auth/require-staff";
 
 export const metadata: Metadata = { title: "Respuestas privadas, MEJOR QUE DECIR", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -22,7 +21,7 @@ export default async function AdminResponsesPage({
   const pageValue = Number((await searchParams).page ?? "1");
   const page = Number.isInteger(pageValue) ? Math.max(1, pageValue) : 1;
   const start = (page - 1) * PAGE_SIZE;
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requireStaff();
   const { data: submissions, error, count } = await supabase
     .from("form_submissions")
     .select("id,display_name,province_id,locality,answers,submitted_at,is_demo,form:forms(title)", { count: "exact" })
@@ -32,15 +31,12 @@ export default async function AdminResponsesPage({
 
   return (
     <>
-      <SiteHeader />
-      <main>
         <section className="hero wrap" style={{ paddingTop: 28 }}>
           <span className="eyebrow">Administración · Privado</span>
           <h1 style={{ fontSize: "clamp(24px, 7vw, 30px)" }}>Respuestas</h1>
           <p>Vista administrativa de envíos. Estos datos personales no se muestran en el mapa ni en la síntesis.</p>
         </section>
         <section className="section-tight wrap">
-          <p><Link href="/admin">← Panel</Link></p>
           {error ? <div className="card" role="alert"><p>No se pudieron consultar las respuestas. Aplicá la migración de formularios para habilitar esta vista.</p></div> : <>
             <p className="muted">{count ?? 0} respuestas reales · página {page}</p>
             {submissions?.length ? submissions.map((submission) => {
@@ -59,8 +55,6 @@ export default async function AdminResponsesPage({
             </nav>
           </>}
         </section>
-      </main>
-      <SiteFooter />
     </>
   );
 }

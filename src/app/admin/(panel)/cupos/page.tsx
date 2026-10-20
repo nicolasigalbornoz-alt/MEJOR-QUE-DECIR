@@ -1,9 +1,7 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { COMMISSIONS, WORKSHOPS } from "@/features/forms/catalogs";
-import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
-import { updateCapacity } from "@/app/admin/cupos/actions";
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { updateCapacity } from "@/app/admin/(panel)/cupos/actions";
+import { requireStaff } from "@/lib/auth/require-staff";
 
 export const metadata: Metadata = { title: "Administrar cupos, MEJOR QUE DECIR", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -13,7 +11,7 @@ export default async function AdminCapacityPage({
 }: {
   searchParams: Promise<{ error?: string; saved?: string }>;
 }) {
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requireStaff();
   const [{ data: form }, { data: dbCommissions }, { data: dbWorkshops }, query] = await Promise.all([
     supabase.from("forms").select("id,form_versions(id,status)").eq("slug", "mejor-que-decir").maybeSingle(),
     supabase.from("commissions").select("id,name,capacity").eq("active", true).order("position"),
@@ -44,15 +42,12 @@ export default async function AdminCapacityPage({
 
   return (
     <>
-      <SiteHeader />
-      <main>
         <section className="hero wrap" style={{ paddingTop: 28 }}>
           <span className="eyebrow">Administración</span>
           <h1 style={{ fontSize: "clamp(24px, 7vw, 30px)" }}>Cupos</h1>
           <p>Disponibilidad calculada únicamente con respuestas reales; los datos de demostración se excluyen.</p>
         </section>
         <section className="section-tight wrap">
-          <p><Link href="/admin">← Panel</Link></p>
           {query.error && <p className="form-msg is-visible error" role="alert">No se pudo guardar el cupo.</p>}
           {query.saved && <p className="form-msg is-visible success" role="status">Cupo actualizado.</p>}
           {!version && <p className="muted">La base todavía no tiene la versión publicada de la encuesta; los conteos aparecen en cero hasta aplicar las migraciones.</p>}
@@ -74,8 +69,6 @@ export default async function AdminCapacityPage({
             </section>
           ))}
         </section>
-      </main>
-      <SiteFooter />
     </>
   );
 }

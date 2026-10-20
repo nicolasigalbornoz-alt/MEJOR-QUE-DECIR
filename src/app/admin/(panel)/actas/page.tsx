@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
-import { changeActDocumentVisibility, deleteCommissionAct } from "@/app/admin/actas/actions";
+import { changeActDocumentVisibility, deleteCommissionAct } from "@/app/admin/(panel)/actas/actions";
 import { ActUploadForm } from "@/features/events/ActUploadForm";
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { requireStaff } from "@/lib/auth/require-staff";
 
 export const metadata: Metadata = { title: "Administrar actas, MEJOR QUE DECIR", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -22,7 +20,7 @@ export default async function AdminActsPage({
 }: {
   searchParams: Promise<{ error?: string; saved?: string }>;
 }) {
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requireStaff();
   const [{ data: commissions }, { data: acts, error }, query] = await Promise.all([
     supabase.from("commissions").select("id,name").eq("active", true).order("position"),
     supabase.from("commission_acts").select("id,commission_id,summary,storage_path,original_filename,file_size_bytes,document_public,uploaded_at,commission:commissions(name)").order("uploaded_at", { ascending: false }),
@@ -31,15 +29,12 @@ export default async function AdminActsPage({
 
   return (
     <>
-      <SiteHeader />
-      <main>
         <section className="hero wrap" style={{ paddingTop: 28 }}>
           <span className="eyebrow">Administración</span>
           <h1 style={{ fontSize: "clamp(24px, 7vw, 30px)" }}>Actas de comisión</h1>
           <p>El resumen se publica en la síntesis. El Word queda privado salvo que lo marques público.</p>
         </section>
         <section className="section-tight wrap">
-          <p><Link href="/admin">← Panel</Link></p>
           {query.error && <p className="form-msg is-visible error" role="alert">{messages[query.error] ?? "No se pudo completar la operación."}</p>}
           {query.saved && <p className="form-msg is-visible success" role="status">Acta guardada.</p>}
           {error && <p className="empty-note">No se pudieron consultar las actas. Verificá la migración de Supabase.</p>}
@@ -71,8 +66,6 @@ export default async function AdminActsPage({
           ))}
           <p className="muted small">Los links firmados vencen en una hora. Al volver privado un documento, no se emiten nuevos links públicos.</p>
         </section>
-      </main>
-      <SiteFooter />
     </>
   );
 }

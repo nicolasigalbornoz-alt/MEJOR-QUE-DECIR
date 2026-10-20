@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { requireStaff } from "@/lib/auth/require-staff";
 import { toArgentinaTimestamp } from "@/lib/dates";
 
 const optionalLocalDate = z.string().refine((value) => !value || !Number.isNaN(Date.parse(`${value}:00-03:00`)));
@@ -26,7 +26,7 @@ export async function createEvent(formData: FormData) {
   });
   if (!parsed.success) redirect("/admin/events?error=invalid");
 
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requireStaff("editor");
   const { error } = await supabase.from("events").insert({
     title: parsed.data.title,
     slug: parsed.data.slug,
@@ -52,7 +52,7 @@ export async function updateEvent(formData: FormData) {
     endsAt: formData.get("endsAt") ?? "",
   });
   if (!id.success || !parsed.success) redirect("/admin/events?error=invalid");
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requireStaff("editor");
   const { error } = await supabase.from("events").update({
     title: parsed.data.title,
     slug: parsed.data.slug,
@@ -72,7 +72,7 @@ export async function changeEventStatus(formData: FormData) {
   const status = z.enum(["draft", "published", "archived"]).safeParse(formData.get("status"));
   if (!eventId.success || !status.success) redirect("/admin/events?error=invalid");
 
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requireStaff("editor");
   const { error } = await supabase.from("events").update({ status: status.data, updated_at: new Date().toISOString() }).eq("id", eventId.data);
   if (error) redirect("/admin/events?error=save");
   revalidatePath("/admin/events");

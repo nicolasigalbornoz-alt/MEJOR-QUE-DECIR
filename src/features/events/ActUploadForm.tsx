@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, type FormEvent } from "react";
-import { saveCommissionAct } from "@/app/admin/actas/actions";
+import { saveCommissionAct } from "@/app/admin/(panel)/actas/actions";
 import { createClient } from "@/lib/supabase/browser";
 
 const MAX_FILE_BYTES = 8 * 1024 * 1024;

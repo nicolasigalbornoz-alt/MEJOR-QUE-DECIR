@@ -1,8 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
-import { changeEventStatus, createEvent, updateEvent } from "@/app/admin/events/actions";
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { changeEventStatus, createEvent, updateEvent } from "@/app/admin/(panel)/events/actions";
+import { requireStaff } from "@/lib/auth/require-staff";
 import { formatArgentinaDate, toArgentinaDateTimeInput } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Administrar eventos, MEJOR QUE DECIR", robots: { index: false, follow: false } };
@@ -20,7 +19,7 @@ export default async function AdminEventsPage({
 }: {
   searchParams: Promise<{ error?: string; saved?: string }>;
 }) {
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requireStaff();
   const [{ data: events, error }, query] = await Promise.all([
     supabase.from("events").select("id,slug,title,description,starts_at,ends_at,status").order("created_at", { ascending: false }),
     searchParams,
@@ -29,15 +28,12 @@ export default async function AdminEventsPage({
 
   return (
     <>
-      <SiteHeader />
-      <main>
         <section className="hero wrap" style={{ paddingTop: 28 }}>
           <span className="eyebrow">Administración</span>
           <h1 style={{ fontSize: "clamp(24px, 7vw, 30px)" }}>Eventos</h1>
           <p>Creá encuentros y publicá su información cuando esté lista.</p>
         </section>
         <section className="section-tight wrap">
-          <p><Link href="/admin">← Panel</Link></p>
           {message && <p className="form-msg is-visible error" role="alert">{message}</p>}
           {query.saved && <p className="form-msg is-visible success" role="status">Cambios guardados.</p>}
           {error && <p className="form-msg is-visible error" role="alert">No se pudo leer la lista. Revisá la migración `create_events_forms_and_reports`.</p>}
@@ -90,8 +86,6 @@ export default async function AdminEventsPage({
             </article>
           )) : <p className="empty-note">Todavía no hay eventos. Al aplicar las migraciones aparecerá también el encuentro actual.</p>}
         </section>
-      </main>
-      <SiteFooter />
     </>
   );
 }

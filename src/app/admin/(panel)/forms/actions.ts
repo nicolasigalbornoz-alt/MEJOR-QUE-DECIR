@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { requireStaff } from "@/lib/auth/require-staff";
 
 const formSchema = z.object({
   title: z.string().trim().min(1).max(180),
@@ -35,7 +35,7 @@ export async function createForm(formData: FormData) {
   });
   if (!parsed.success) redirect("/admin/forms?error=invalid");
 
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requireStaff("editor");
   const { data: form, error } = await supabase.from("forms").insert({
     title: parsed.data.title,
     slug: parsed.data.slug,
@@ -69,7 +69,7 @@ export async function updateForm(formData: FormData) {
   });
   if (!id.success || !parsed.success) redirect("/admin/forms?error=invalid");
 
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requireStaff("editor");
   const { data: current } = await supabase.from("forms").select("slug").eq("id", id.data).maybeSingle();
   const { data: published } = await supabase.from("form_versions").select("id").eq("form_id", id.data).eq("status", "published").limit(1);
   if (current && published?.length && current.slug !== parsed.data.slug) {
@@ -95,7 +95,7 @@ export async function updateDraftQuestion(formData: FormData) {
   const helpText = z.string().trim().max(1000).safeParse(formData.get("helpText") ?? "");
   if (!questionId.success || !formId.success || !label.success || !helpText.success) redirect(`/admin/forms/${String(formData.get("formId"))}?error=invalid`);
 
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requireStaff("editor");
   const { data: question } = await supabase.from("form_questions").select("id,version_id,question_type").eq("id", questionId.data).maybeSingle();
   const { data: version } = question
     ? await supabase.from("form_versions").select("status").eq("id", question.version_id).maybeSingle()
@@ -145,7 +145,7 @@ export async function addQuestion(formData: FormData) {
     redirect("/admin/forms?error=options");
   }
 
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requireStaff("editor");
   const { data: version } = await supabase.from("form_versions").select("id,status,form_id").eq("id", versionId.data).maybeSingle();
   if (!version || version.status !== "draft") redirect("/admin/forms?error=published");
 
@@ -196,7 +196,7 @@ export async function removeDraftQuestion(formData: FormData) {
   const questionId = z.string().uuid().safeParse(formData.get("questionId"));
   const formId = z.string().uuid().safeParse(formData.get("formId"));
   if (!questionId.success || !formId.success) redirect("/admin/forms?error=invalid");
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requireStaff("editor");
   const { data: question } = await supabase.from("form_questions").select("id,version_id").eq("id", questionId.data).maybeSingle();
   if (!question) redirect(`/admin/forms/${formId.data}?error=save`);
   const { data: version } = await supabase.from("form_versions").select("status").eq("id", question.version_id).maybeSingle();
@@ -210,7 +210,7 @@ export async function removeDraftQuestion(formData: FormData) {
 export async function createFormVersion(formData: FormData) {
   const formId = z.string().uuid().safeParse(formData.get("formId"));
   if (!formId.success) redirect("/admin/forms?error=invalid");
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requireStaff("editor");
 
   const { data: versions } = await supabase.from("form_versions").select("id,version_number,status").eq("form_id", formId.data).order("version_number", { ascending: false });
   const nextNumber = (versions?.[0]?.version_number ?? 0) + 1;
@@ -264,7 +264,7 @@ export async function publishFormVersion(formData: FormData) {
   const versionId = z.string().uuid().safeParse(formData.get("versionId"));
   const formId = z.string().uuid().safeParse(formData.get("formId"));
   if (!versionId.success || !formId.success) redirect("/admin/forms?error=invalid");
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requireStaff("editor");
   const { error } = await supabase.rpc("publish_form_version", { requested_version: versionId.data });
   if (error) redirect(`/admin/forms/${formId.data}?error=publish`);
   revalidatePath("/eventos");

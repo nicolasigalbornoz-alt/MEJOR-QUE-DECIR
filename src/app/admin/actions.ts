@@ -1,13 +1,11 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { getAdminAccess } from "@/lib/auth/admin";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
 export async function signOutAdmin() {
-  const access = await getAdminAccess();
-
-  if (access.status === "admin") {
+  // Cierra cualquier sesión, también la de una cuenta sin rol asignado.
+  if (isSupabaseConfigured()) {
     const supabase = await createClient();
     await supabase.auth.signOut();
   }

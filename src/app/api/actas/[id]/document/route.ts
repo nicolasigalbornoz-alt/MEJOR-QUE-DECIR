@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAdminAccess } from "@/lib/auth/admin";
+import { getStaffAccess } from "@/lib/auth/staff";
 import { createClient } from "@/lib/supabase/server";
 import { createPublicSupabaseClient } from "@/lib/supabase/public";
 
@@ -10,10 +10,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const access = await getAdminAccess();
+  const access = await getStaffAccess();
   let storagePath: string | null = null;
 
-  if (access.status === "admin") {
+  if (access.status === "staff") {
     const supabase = await createClient();
     const { data } = await supabase.from("commission_acts").select("storage_path").eq("id", id).maybeSingle();
     storagePath = data?.storage_path ?? null;

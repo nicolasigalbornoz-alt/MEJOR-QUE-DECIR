@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { signInAdmin } from "@/app/admin/login/actions";
-import { getAdminAccess } from "@/lib/auth/admin";
+import { getStaffAccess } from "@/lib/auth/staff";
 
 export const metadata: Metadata = {
   title: "Acceso de administración, MEJOR QUE DECIR",
@@ -13,6 +13,7 @@ const errorMessages: Record<string, string> = {
   invalid: "No pudimos validar el acceso. Revisá el correo y la contraseña.",
   configuration: "El acceso todavía no está conectado a Supabase.",
   unauthorized: "Esta cuenta no tiene permiso para administrar el sitio.",
+  link: "El enlace venció o ya se usó. Pedile a un admin una nueva invitación.",
 };
 
 export default async function AdminLoginPage({
@@ -20,9 +21,9 @@ export default async function AdminLoginPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  const access = await getAdminAccess();
+  const access = await getStaffAccess();
 
-  if (access.status === "admin") {
+  if (access.status === "staff") {
     redirect("/admin");
   }
 

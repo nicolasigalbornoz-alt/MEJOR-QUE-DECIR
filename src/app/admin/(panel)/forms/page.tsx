@@ -1,8 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
-import { createForm } from "@/app/admin/forms/actions";
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { createForm } from "@/app/admin/(panel)/forms/actions";
+import { requireStaff } from "@/lib/auth/require-staff";
 
 export const metadata: Metadata = { title: "Administrar formularios, MEJOR QUE DECIR", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -12,7 +11,7 @@ export default async function AdminFormsPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requireStaff();
   const [{ data: forms, error }, { data: events }, query] = await Promise.all([
     supabase.from("forms").select("id,slug,title,intro,status,event_id,form_versions(version_number,status)").order("created_at", { ascending: false }),
     supabase.from("events").select("id,title,status").order("created_at", { ascending: false }),
@@ -21,15 +20,12 @@ export default async function AdminFormsPage({
 
   return (
     <>
-      <SiteHeader />
-      <main>
         <section className="hero wrap" style={{ paddingTop: 28 }}>
           <span className="eyebrow">Administración</span>
           <h1 style={{ fontSize: "clamp(24px, 7vw, 30px)" }}>Formularios</h1>
           <p>Creá formularios y publicá versiones sin cambiar las respuestas anteriores.</p>
         </section>
         <section className="section-tight wrap">
-          <p><Link href="/admin">← Panel</Link></p>
           {query.error && <p className="form-msg is-visible error" role="alert">No pudimos completar la operación ({query.error}). Revisá los campos y el estado de la base.</p>}
           <div className="card">
             <h2 className="mt-0" style={{ fontSize: 19 }}>Crear formulario</h2>
@@ -56,8 +52,6 @@ export default async function AdminFormsPage({
             );
           })}
         </section>
-      </main>
-      <SiteFooter />
     </>
   );
 }
