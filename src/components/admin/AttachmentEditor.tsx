@@ -13,11 +13,13 @@ export type AttachmentDraft =
  * se eligen; la Server Action verifica cada ruta antes de guardar. Envía el
  * resultado como JSON en el campo `name`.
  */
-export function AttachmentEditor({ name, bucket, initial, allowLinks = true }: {
+export function AttachmentEditor({ name, bucket, initial, allowLinks = true, max = 30, showTitles = true }: {
   name: string;
   bucket: FileBucket;
   initial: AttachmentDraft[];
   allowLinks?: boolean;
+  max?: number;
+  showTitles?: boolean;
 }) {
   const [items, setItems] = useState<AttachmentDraft[]>(initial);
   const [uploading, setUploading] = useState(false);
@@ -25,6 +27,7 @@ export function AttachmentEditor({ name, bucket, initial, allowLinks = true }: {
   const [linkTitle, setLinkTitle] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
   const rules = FILE_RULES[bucket];
+  const full = items.length >= max;
 
   async function upload(file: File) {
     setMessage("");
@@ -73,15 +76,17 @@ export function AttachmentEditor({ name, bucket, initial, allowLinks = true }: {
       <input type="hidden" name={name} value={JSON.stringify(items)} />
       {items.map((item, index) => (
         <div className="repeat-row" key={item.kind === "file" ? item.storagePath : `${item.url}-${index}`}>
-          <input className="input" value={item.title} maxLength={200} aria-label="Título del adjunto"
-            onChange={(event) => setItems((current) => current.map((other, position) => position === index ? { ...other, title: event.target.value } : other))} />
+          {showTitles ? (
+            <input className="input" value={item.title} maxLength={200} aria-label="Título del adjunto"
+              onChange={(event) => setItems((current) => current.map((other, position) => position === index ? { ...other, title: event.target.value } : other))} />
+          ) : <b>{item.kind === "file" ? "Archivo subido" : "Link"}</b>}
           <span className="small muted">
             {item.kind === "file" ? `Archivo · ${(item.sizeBytes / 1024 / 1024).toFixed(1)} MB` : item.url}
           </span>
           <button className="btn btn-ghost btn-sm" type="button" onClick={() => void remove(index)}>Quitar</button>
         </div>
       ))}
-      <div className="field" style={{ marginTop: 8 }}>
+      {!full && <div className="field" style={{ marginTop: 8 }}>
         <label className="field-label" htmlFor={`${name}-file`}>Subir archivo: {rules.label}</label>
         <input className="input" id={`${name}-file`} type="file" accept={acceptAttribute(bucket)} disabled={uploading}
           onChange={(event) => {
@@ -90,8 +95,8 @@ export function AttachmentEditor({ name, bucket, initial, allowLinks = true }: {
             if (file) void upload(file);
           }} />
         {uploading && <p className="muted">Subiendo…</p>}
-      </div>
-      {allowLinks && (
+      </div>}
+      {allowLinks && !full && (
         <div className="repeat-row">
           <input className="input" value={linkTitle} maxLength={200} placeholder="Título del link" aria-label="Título del link" onChange={(event) => setLinkTitle(event.target.value)} />
           <input className="input" value={linkUrl} maxLength={2000} placeholder="https://…" aria-label="URL" type="url" onChange={(event) => setLinkUrl(event.target.value)} />
