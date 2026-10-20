@@ -6,6 +6,7 @@ import { PROVINCES } from "@/data/provinces";
 import { MilitantForm } from "@/features/militants/MilitantForm";
 import { requireStaff } from "@/lib/auth/require-staff";
 import { hasRole } from "@/lib/auth/staff";
+import { listContactsKnownBy } from "@/lib/data/contacts";
 import { getMilitant } from "@/lib/data/militants";
 import { listTags } from "@/lib/data/tags";
 
@@ -25,9 +26,10 @@ export default async function MilitantPage({
 }) {
   const [{ supabase, access }, { id }, query] = await Promise.all([requireStaff(), params, searchParams]);
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
-  const [militant, roleTags] = await Promise.all([
+  const [militant, roleTags, knownContacts] = await Promise.all([
     getMilitant(supabase, id),
     listTags(supabase, ["responsabilidad"], { includeArchived: true }),
+    listContactsKnownBy(supabase, id),
   ]);
   if (!militant) notFound();
   const canEdit = hasRole(access.role, "editor");
@@ -58,6 +60,21 @@ export default async function MilitantPage({
           {militant.notes && <p style={{ whiteSpace: "pre-wrap" }}>{militant.notes}</p>}
         </div>
       )}
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <h2 className="mt-0" style={{ fontSize: 18 }}>Contactos que conoce</h2>
+        {knownContacts.length ? (
+          <ul className="mb-0">
+            {knownContacts.map((contact) => (
+              <li key={contact.id}>
+                <Link href={`/admin/contactos/${contact.id}`}>{contact.name}</Link>
+                {contact.type && <> <TagPill name={contact.type.name} color={contact.type.color} /></>}
+                {contact.note && <span className="muted"> · {contact.note}</span>}
+              </li>
+            ))}
+          </ul>
+        ) : <p className="muted mb-0">No figura como referente de ningún contacto.</p>}
+      </div>
     </section>
   );
 }
