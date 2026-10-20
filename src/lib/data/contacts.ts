@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { pageRange, searchTerm } from "@/lib/data/listing";
+import { pageRange, searchTerm, uuidFilter } from "@/lib/data/listing";
 
 type TagRef = { name: string; color: string; archived: boolean } | null;
 
@@ -65,7 +65,8 @@ export async function listContacts(supabase: SupabaseClient, filters: ContactFil
   let query = supabase.from("contacts").select(COLUMNS, { count: "exact" });
   const term = searchTerm(filters.q);
   if (term) query = query.ilike("search_text", `%${term}%`);
-  if (filters.tipo) query = query.eq("type_tag_id", filters.tipo);
+  const tipo = uuidFilter(filters.tipo);
+  if (tipo) query = query.eq("type_tag_id", tipo);
   if (filters.provincia) query = query.eq("province_id", filters.provincia);
   const { data, count, error } = await query.order("name").range(from, to);
   if (error) throw new Error("No se pudieron cargar los contactos.");

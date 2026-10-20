@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { pageRange, searchTerm } from "@/lib/data/listing";
+import { pageRange, searchTerm, uuidFilter } from "@/lib/data/listing";
 
 type TagRef = { id: string; name: string; color: string; archived: boolean; category: string };
 
@@ -54,8 +54,9 @@ export type ActivityFilters = { q?: string; tag?: string };
 export async function listActivities(supabase: SupabaseClient, filters: ActivityFilters, page: number) {
   const { from, to } = pageRange(page);
   let ids: string[] | null = null;
-  if (filters.tag) {
-    const { data } = await supabase.from("activity_tags").select("activity_id").eq("tag_id", filters.tag);
+  const tag = uuidFilter(filters.tag);
+  if (tag) {
+    const { data } = await supabase.from("activity_tags").select("activity_id").eq("tag_id", tag);
     ids = (data ?? []).map((row) => row.activity_id as string);
     if (!ids.length) return { items: [], total: 0 };
   }

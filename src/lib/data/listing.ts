@@ -25,3 +25,8 @@ export function searchTerm(value: string | undefined) {
     .trim()
     .slice(0, 80);
 }
+
+/** Ids de filtros que llegan por la URL: si no son UUID se ignoran. */
+export function uuidFilter(value: string | undefined) {
+  return value && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value) ? value : undefined;
+}

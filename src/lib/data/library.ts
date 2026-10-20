@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { pageRange, searchTerm } from "@/lib/data/listing";
+import { pageRange, searchTerm, uuidFilter } from "@/lib/data/listing";
 
 type TagRef = { id: string; name: string; color: string; archived: boolean };
 
@@ -53,8 +53,9 @@ export type LibraryFilters = { q?: string; tema?: string };
 export async function listLibrary(supabase: SupabaseClient, filters: LibraryFilters, page: number) {
   const { from, to } = pageRange(page);
   let ids: string[] | null = null;
-  if (filters.tema) {
-    const { data } = await supabase.from("library_item_tags").select("item_id").eq("tag_id", filters.tema);
+  const tema = uuidFilter(filters.tema);
+  if (tema) {
+    const { data } = await supabase.from("library_item_tags").select("item_id").eq("tag_id", tema);
     ids = (data ?? []).map((row) => row.item_id as string);
     if (!ids.length) return { items: [], total: 0 };
   }

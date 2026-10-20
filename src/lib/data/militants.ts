@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { pageRange, searchTerm } from "@/lib/data/listing";
+import { pageRange, searchTerm, uuidFilter } from "@/lib/data/listing";
 
 export type MilitantRole = { id: string; tagId: string; detail: string; tag: { name: string; color: string; archived: boolean } };
 
@@ -56,6 +56,7 @@ export type MilitantFilters = { q?: string; provincia?: string; responsabilidad?
 
 export async function listMilitants(supabase: SupabaseClient, filters: MilitantFilters, page: number) {
   const { from, to } = pageRange(page);
+  filters = { ...filters, responsabilidad: uuidFilter(filters.responsabilidad) };
   const columns = filters.responsabilidad
     ? SUMMARY_COLUMNS.replace("militant_roles(", "militant_roles!inner(")
     : SUMMARY_COLUMNS;
