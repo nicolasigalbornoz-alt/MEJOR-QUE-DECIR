@@ -10,6 +10,10 @@ create table public.contacts (
   province_id text references public.province_catalog(id),
   locality text not null default '' check (char_length(locality) <= 200),
   notes text not null default '' check (char_length(notes) <= 4000),
+  -- Texto normalizado (sin acentos ni mayúsculas) para la búsqueda.
+  search_text text generated always as (
+    private.normalize_person_name(name || ' ' || description || ' ' || locality)
+  ) stored,
   created_by uuid default auth.uid() references auth.users(id) on delete set null,
   updated_by uuid references auth.users(id) on delete set null,
   created_at timestamptz not null default now(),

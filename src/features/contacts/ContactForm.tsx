@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { findMilitants } from "@/app/admin/(panel)/companeros/actions";
 import { saveContact } from "@/app/admin/(panel)/contactos/actions";
-import { MilitantPicker } from "@/components/admin/MilitantPicker";
+import { EntityPicker } from "@/components/admin/EntityPicker";
 import { PROVINCES } from "@/data/provinces";
 import type { Tag } from "@/features/tags/categories";
 import type { Contact } from "@/lib/data/contacts";
@@ -30,8 +31,10 @@ export function ContactForm({ contact, typeTags }: { contact?: Contact; typeTags
         </div>
         <div className="field span-2">
           <span className="field-label">Referentes de Jóvenes FR que lo conocen</span>
-          <MilitantPicker
+          <EntityPicker
             name="referent"
+            search={findMilitants}
+            placeholder="Buscar compañero por nombre…"
             noteLabel="Vínculo (opcional)"
             initial={contact?.referents.map((referent) => ({ id: referent.militantId, label: referent.name, note: referent.note })) ?? []}
           />

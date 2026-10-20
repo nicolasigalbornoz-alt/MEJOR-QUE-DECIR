@@ -70,6 +70,10 @@ create table public.militants (
   notes text not null default '' check (char_length(notes) <= 4000),
   active boolean not null default true,
   source text not null default 'manual' check (source in ('manual', 'padron-2026')),
+  -- Texto normalizado (sin acentos ni mayúsculas) para la búsqueda.
+  search_text text generated always as (
+    private.normalize_person_name(full_name || ' ' || locality || ' ' || email)
+  ) stored,
   created_by uuid default auth.uid() references auth.users(id) on delete set null,
   updated_by uuid references auth.users(id) on delete set null,
   created_at timestamptz not null default now(),

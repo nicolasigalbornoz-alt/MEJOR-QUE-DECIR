@@ -62,7 +62,7 @@ export async function listMilitants(supabase: SupabaseClient, filters: MilitantF
   let query = supabase.from("militants").select(columns, { count: "exact" });
 
   const term = searchTerm(filters.q);
-  if (term) query = query.or(`normalized_name.ilike.*${term}*,locality.ilike.*${term}*,email.ilike.*${term}*`);
+  if (term) query = query.ilike("search_text", `%${term}%`);
   if (filters.provincia) query = query.eq("province_id", filters.provincia);
   if (filters.responsabilidad) query = query.eq("militant_roles.tag_id", filters.responsabilidad);
   if (filters.inactivos !== "1") query = query.eq("active", true);

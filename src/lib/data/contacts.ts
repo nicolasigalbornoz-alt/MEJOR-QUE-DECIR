@@ -64,7 +64,7 @@ export async function listContacts(supabase: SupabaseClient, filters: ContactFil
   const { from, to } = pageRange(page);
   let query = supabase.from("contacts").select(COLUMNS, { count: "exact" });
   const term = searchTerm(filters.q);
-  if (term) query = query.or(`name.ilike.*${term}*,description.ilike.*${term}*,locality.ilike.*${term}*`);
+  if (term) query = query.ilike("search_text", `%${term}%`);
   if (filters.tipo) query = query.eq("type_tag_id", filters.tipo);
   if (filters.provincia) query = query.eq("province_id", filters.provincia);
   const { data, count, error } = await query.order("name").range(from, to);
@@ -85,4 +85,18 @@ export async function listContactsKnownBy(supabase: SupabaseClient, militantId: 
   return ((data ?? []) as unknown as { note: string; contacts: { id: string; name: string; tags: TagRef } | null }[])
     .filter((row) => row.contacts)
     .map((row) => ({ id: row.contacts!.id, name: row.contacts!.name, type: row.contacts!.tags, note: row.note }));
+}
+
+/** Búsqueda acotada para selectores (quienes hicieron una actividad). */
+export async function searchContactOptions(supabase: SupabaseClient, q: string) {
+  const term = searchTerm(q);
+  if (term.length < 2) return [];
+  const { data } = await supabase
+    .from("contacts")
+    .select("id,name,tags(name)")
+    .ilike("search_text", `%${term}%`)
+    .order("name")
+    .limit(10);
+  return ((data ?? []) as unknown as { id: string; name: string; tags: { name: string } | null }[])
+    .map((row) => ({ id: row.id, label: [row.name, row.tags?.name].filter(Boolean).join(" · ") }));
 }

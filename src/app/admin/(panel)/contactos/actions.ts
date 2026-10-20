@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireStaff } from "@/lib/auth/require-staff";
+import { searchContactOptions } from "@/lib/data/contacts";
 import { parseContactForm } from "@/lib/validation/contact";
 
 export async function saveContact(formData: FormData) {
@@ -59,4 +60,10 @@ export async function deleteContact(formData: FormData) {
   if (error) redirect(`/admin/contactos/${id.data}?error=${error.code === "23503" ? "in-use" : "save"}`);
   revalidatePath("/admin/contactos");
   redirect("/admin/contactos?saved=deleted");
+}
+
+/** Usado por los selectores de contactos en otros formularios. */
+export async function findContacts(query: string) {
+  const { supabase } = await requireStaff();
+  return searchContactOptions(supabase, String(query ?? ""));
 }
